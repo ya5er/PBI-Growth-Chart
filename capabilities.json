@@ -1,0 +1,203 @@
+{
+    "dataRoles": [
+        {
+            "displayName": "X-Axis",
+            "name": "category",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Y-Axis",
+            "name": "measure",
+            "kind": "Measure"
+        },
+        {
+            "displayName": "Comments",
+            "name": "comment",
+            "kind": "Grouping"
+        } 
+    ],
+    "objects": {
+        "dataPoint": {
+            "properties": {
+                "defaultColor": {
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "showAllDataPoints": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "fill": {
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "fillRule": {
+                    "type": {
+                        "fill": {}
+                    }
+                },
+                 "fontSize": {
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
+                    }
+                }
+            }
+        },
+        "SecondaryYAxis": {
+            "displayName": "Secondary Y-Axis",
+            "properties": {
+                "ToggleOn": {
+                    "displayName": "Show Axis Labels",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "MinValue": {
+                    "displayName": "Min Value",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "MaxValue": {
+                    "displayName": "Max Value",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "TickCount": {
+                    "displayName": "Axis Tick Count",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "DisplayDigits": {
+                    "displayName": "Displayed Decimal Places",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "DisplayUnits": {
+                    "displayName": "Display Units",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "value": "auto",
+                                "displayName": "Auto"
+                            },
+                            {
+                                "value": "none",
+                                "displayName": "None"
+                            },
+                            {
+                                "value": "thousands",
+                                "displayName": "Thousands"
+                            },
+                            {
+                                "value": "millions",
+                                "displayName": "Millions"
+                            },
+                            {
+                                "value": "billions",
+                                "displayName": "Billions"
+                            },
+                            {
+                                "value": "trillions",
+                                "displayName": "Trillions"
+                            }
+                        ]
+                    }
+                },
+                "FontFamily": {
+                    "displayName": "Font Family",
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "FontColor": {
+                    "displayName": "Font Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "FontSize": {
+                    "displayName": "Font Size",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
+        "GrowthIndicator": {
+            "displayName": "Growth Indicator",
+            "properties": {
+                "ToggleGrowthIndicator": {
+                    "displayName": "Show Growth Indicator",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "Selector1": {
+                    "displayName": "First Selection",
+                    "description": "MM-DD-YYYY",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "Selector2": {
+                    "displayName": "Second Selection",
+                    "description": "MM-DD-YYYY",
+                    "type": {
+                        "text": true
+                    }
+                }
+            }
+        }
+    },
+    "dataViewMappings": [
+        {
+            "conditions": [
+                {
+                    "category": {
+                        "max": 1
+                    },
+                    "measure": {
+                        "max": 1
+                    },
+                    "comment": {
+                        "max": 1
+                    }
+                }
+            ],
+
+            "table": {
+                "rows": {
+                    "select": [
+                        { "for": { "in": "category" } },
+                        { "for": { "in": "measure"} },
+                        { "for": { "in": "comment"} }
+                    ]
+                }
+            }
+        }
+    ],
+    "privileges": []
+}
