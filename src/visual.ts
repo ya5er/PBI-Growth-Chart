@@ -38,11 +38,15 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         console.log('Visual update', options);
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
+        let settings = this.settings;
 
         console.log(this.settings);
         
         // Clear down existing plot
         this.container.selectAll('*').remove();
+
+        // Remove tooltip in case of glitch
+        d3.select('body').selectAll('div.tooltip').remove();
 
         console.log(options.dataViews);
 
@@ -103,7 +107,7 @@ export class Visual implements IVisual {
         console.log(data);
 
         // Set the dimensions and margins of the graph
-        var margin = {top: 10, right: 60, bottom: 30, left: 60},
+        var margin = {top: 10, right: 70, bottom: 30, left: 60},
             width = options.viewport.width - margin.left - margin.right,
             height = options.viewport.height - margin.top - margin.bottom;
 
@@ -111,7 +115,8 @@ export class Visual implements IVisual {
 
         const tooltip = d3.select("body")
             .append("div")
-            .attr("class", "tooltip");
+            .attr("class", "tooltip")
+            .style("background-color", this.settings.TooltipSettings.TooltipColour);
 
         // Append the svg object to the body of the page
         var svg = this.container
@@ -129,21 +134,83 @@ export class Visual implements IVisual {
 
         // Add X axis
         svg.append('g')
+            .classed('x-axis-g', true)  
             .attr('transform', 'translate(0,' + height + ')')
-            .call(d3.axisBottom(x));
+            .call(d3.axisBottom(x)
+                .tickFormat(function(date : Date){
+                    if (d3.timeYear(date) < date) {
+                    return d3.timeFormat('%b')(date);
+                    } else {
+                    return d3.timeFormat('%Y')(date);
+                    }
+                })
+                .ticks(this.settings.XAxisSettings.TickCount))
+            .call(g => {
+                // font settings
+                g.selectAll('.x-axis-g text')
+                    .style('fill', this.settings.XAxisSettings.FontColor)
+                    .style('font-family', this.settings.XAxisSettings.FontFamily)
+                    .style('font-size', this.settings.XAxisSettings.FontSize);
+
+                g.selectAll('.x-axis-g text')
+                    .attr('transform', `translate(${this.settings.XAxisSettings.XOffset}, ${-this.settings.XAxisSettings.YOffset}) rotate(-${this.settings.XAxisSettings.LabelAngle})`)
+                    .style('text-anchor', this.settings.XAxisSettings.LabelAngle ? 'end' : 'middle');
+            });
 
         // Set Y axis values
-        let minvalue = d3.min(data, function(d) { return +d.value; });
-        let maxvalue = d3.max(data, function(d) { return +d.value; });
-        let range = maxvalue - minvalue;
+        let minvalue = this.settings.YAxisSettings.MinValue;
+        let maxvalue = this.settings.YAxisSettings.MaxValue <= minvalue ? d3.max(data, function(d) { return +d.value; }) : this.settings.YAxisSettings.MaxValue;
 
         var y = d3.scaleLinear()
-            .domain([0, maxvalue + range / 2])
+            .domain([minvalue, maxvalue])
             .range([ height, 0 ]);
         
         // Add Y axis
         svg.append('g')
-            .call(d3.axisLeft(y));
+            .classed('y-axis-g', true)
+            .call(d3.axisLeft(y)
+                .tickFormat(data => {
+                    // formats y-axis labels with appropriate units
+                    return nFormatter(parseInt(data.toString()), this.settings.YAxisSettings.DisplayDigits, this.settings.YAxisSettings.DisplayUnits);
+                })
+                .ticks(this.settings.YAxisSettings.TickCount))
+            .call(_ => { 
+                d3.selectAll('.y-axis-g text')
+                    .style('fill', this.settings.YAxisSettings.FontColor)
+                    .style('font-family', this.settings.YAxisSettings.FontFamily)
+                    .style('font-size', this.settings.YAxisSettings.FontSize); 
+                });
+
+        
+        function nFormatter(num: number, digits: number, displayUnits: string): string {
+            // converts 15,000 to 15k and etc
+            let si = [
+                { value: 1, symbol: '', text: 'none' },
+                { value: 1E3, symbol: 'K', text: 'thousands' },
+                { value: 1E6, symbol: 'M', text: 'millions' },
+                { value: 1E9, symbol: 'B', text: 'billions' },
+                { value: 1E12, symbol: 'T', text: 'trillions' },
+                { value: 1E15, symbol: 'P', text: 'quadrillions' },
+                { value: 1E18, symbol: 'E', text: 'quintillions' }
+            ];
+
+            let i;
+            // converts numbers into largest reasonable units unless otherwise specified
+            if (displayUnits == 'auto') {
+                for (i = si.length - 1; i > 0; i--) {
+                    if (num >= si[i].value) {
+                        break;
+                    }
+                }
+            } else {
+                for (i = 0; i < si.length - 1; i++) {
+                    if (displayUnits == si[i].text) {
+                        break;
+                    }
+                }
+            }
+            return parseFloat((num / si[i].value).toFixed(digits)).toLocaleString() + si[i].symbol;
+        }
 
         // Add the line
         svg.append('path')
@@ -161,57 +228,56 @@ export class Visual implements IVisual {
 
         const circle = svg.append("circle")
             .attr("r", 0)
-            .attr("fill", "steelblue")
+            .attr("fill", this.settings.TooltipSettings.TooltipColour)
             .style("stroke", "white")
             .attr("opacity", .70)
             .style("pointer-events", "none");
 
-
         const listeningRect = svg.append("rect")
             .attr("width", width)
             .attr("height", height);
+        
+        if (this.settings.TooltipSettings.ToggleTooltip) {
+            // create the mouse move function
+            listeningRect.on("mousemove", function (event) {
+                const [xCoord] = d3.pointer(event, this);
+                const bisectDate = d3.bisector(function(d: chartRow) { return d.date }).left;
+                const x0 = x.invert(xCoord);
+                const i = bisectDate(data, x0, 1);
+                const d0 = data[i - 1];
+                const d1 = data[i];
+                const d = x0.valueOf() - d0.date.valueOf() > d1.date.valueOf() - x0.valueOf() ? d1 : d0;
+                const xPos = x(d.date);
+                const yPos = y(d.value);
 
-        // create the mouse move function
+                // Update the circle position
+                circle.attr("cx", xPos)
+                    .attr("cy", yPos);
 
-        listeningRect.on("mousemove", function (event) {
-            const [xCoord] = d3.pointer(event, this);
-            const bisectDate = d3.bisector(function(d: chartRow) { return d.date }).left;
-            const x0 = x.invert(xCoord);
-            const i = bisectDate(data, x0, 1);
-            const d0 = data[i - 1];
-            const d1 = data[i];
-            const d = x0.valueOf() - d0.date.valueOf() > d1.date.valueOf() - x0.valueOf() ? d1 : d0;
-            const xPos = x(d.date);
-            const yPos = y(d.value);
+                // Add transition for the circle radius
+                circle.transition()
+                    .duration(50)
+                    .attr("r", 5);
 
-            // Update the circle position
-            circle.attr("cx", xPos)
-                .attr("cy", yPos);
+                // add in our tooltip
+                tooltip
+                    .style("display", "block")
+                    .style("left", `${xPos > (width / 2) ? xPos - 75 : xPos + 75}px`)
+                    .style("top", `${yPos + 30}px`)
+                    .html(`<strong>Date:</strong> ${d.date.toLocaleDateString('en-US')}<br>
+                            <strong>Value:</strong> ${d.value !== undefined ? d.value.toFixed(2) : 'N/A'}<br>
+                            ${d.annotation !== null ? d.annotation : ''}`)
+            });
 
-             // Add transition for the circle radius
-            circle.transition()
-                .duration(50)
-                .attr("r", 5);
+            // listening rectangle mouse leave function
+            listeningRect.on("mouseleave", function () {
+                circle.transition()
+                    .duration(50)
+                    .attr("r", 0);
 
-            // add in our tooltip
-            tooltip
-                .style("display", "block")
-                .style("left", `${xPos > (width / 2) ? xPos - 75 : xPos + 75}px`)
-                .style("top", `${yPos + 30}px`)
-                .html(`<strong>Date:</strong> ${d.date.toLocaleDateString('en-US')}<br>
-                        <strong>Value:</strong> ${d.value !== undefined ? d.value.toFixed(2) : 'N/A'}<br>
-                        ${d.annotation !== null ? d.annotation : ''}`)
-        });
-
-        // listening rectangle mouse leave function
-
-        listeningRect.on("mouseleave", function () {
-            circle.transition()
-                .duration(50)
-                .attr("r", 0);
-
-            tooltip.style("display", "none");
-        });
+                tooltip.style("display", "none");
+            });
+        }
 
         // Growth Indicator
         if (this.settings.GrowthIndicator.ToggleGrowthIndicator) {
@@ -243,7 +309,7 @@ export class Visual implements IVisual {
                 .attr("r", 5);
 
             // Create path
-            let widthOffset = 15;
+            let widthOffset = 20;
             let path = d3.line()([
                 [x(growthPoint1.date), y(growthPoint1.value)],
                 [width + widthOffset, y(growthPoint1.value)],
@@ -268,10 +334,10 @@ export class Visual implements IVisual {
             let maxY = (y(growthPoint1.value) >= y(growthPoint2.value)) ? y(growthPoint1.value) : y(growthPoint2.value);
 
             // Arrowhead
-            if (Math.abs(growthPercent) >= 2.5) {
+            if (this.settings.GrowthIndicator.ShowArrow) {
                 svg.append('path')
-                    .attr('d', d3.symbol().type(d3.symbolTriangle).size(50))
-                    .attr('fill', growthPercent > 0 ? 'limegreen' : 'red')
+                    .attr('d', d3.symbol().type(d3.symbolTriangle).size(this.settings.GrowthIndicator.ArrowSize))
+                    .attr('fill', growthPercent > 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
                     .attr('transform', `translate(${width + widthOffset}, ${increasing ? minY : maxY}) rotate(${increasing ? 0 : 60})`);
             }
 
@@ -280,7 +346,7 @@ export class Visual implements IVisual {
                 .attr('y1', y(growthPoint1.value))
                 .attr('x2', width + widthOffset)
                 .attr('y2', y(growthPoint2.value))
-                .attr('stroke', growthPercent >= 0 ? 'limegreen' : 'red')
+                .attr('stroke', growthPercent >= 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
                 .attr('stroke-width', 2);
 
             let growthText = svg.append('text')
@@ -367,8 +433,8 @@ export class Visual implements IVisual {
             });
         
         // Update annotation after being dragged
-        function update (){
-            let fontsize = 11;
+        function update() {
+            let fontsize = settings.AnnotationSettings.FontSize;
 
             newTextElements
                 .data(annotations)
@@ -376,6 +442,8 @@ export class Visual implements IVisual {
                 .attr('x', function(d) { return d.x; })
                 .attr('y', function(d) { return d.y; })
                 .attr('font-size', fontsize)
+                .style('fill', settings.AnnotationSettings.FontColor)
+                .style('font-family', settings.AnnotationSettings.FontFamily)
                 .text(function(d) { return d.text; })
                 .call(drag);
 
@@ -383,12 +451,13 @@ export class Visual implements IVisual {
                 .data(annotations)
                 .join(
                     enter => enter.append('line')
+                        .classed('annotationLine', true)
                         .attr("x1", function(d) { return d.graphx; })
                         .attr("y1", function(d) { return d.graphy; })
                         .attr("x2", function(d) { return d.graphx; })
                         .attr("y2", function(d) { return d.graphy; })
-                        .attr('stroke', 'black')
-                        .attr('stroke-width', 1),
+                        .attr('stroke', settings.AnnotationSettings.LineColor)
+                        .attr('stroke-width', settings.AnnotationSettings.LineThickness),
                     update => update.attr("x1", function(d) { return d.graphx; })
                         .attr("y1", function(d) { return d.graphy; })
                         .attr("x2", function(d) { 
@@ -397,10 +466,18 @@ export class Visual implements IVisual {
                         .attr("y2", function(d) { 
                             return (d.y > d.graphy ? d.y - fontsize : d.y + fontsize / 2);
                         })
-                );       
+                );
+            
+            // set line type (if dashed is selected)
+            if (settings.AnnotationSettings.LineStyle == 'dashed') {
+                svg.selectAll('.annotationLine')
+                    .attr('stroke-dasharray', '5,4');
+            }
         }
 
-        update();
+        if (settings.AnnotationSettings.ToggleAnnotations){
+            update();
+        }
 
         // Update the newTextElements and newLineElements variables to include the annotations
         newTextElements = svg.selectAll('text')

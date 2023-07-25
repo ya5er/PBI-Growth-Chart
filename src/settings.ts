@@ -31,23 +31,44 @@ import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
 
 export class VisualSettings extends DataViewObjectsParser {
     public GrowthIndicator: GrowthIndicator = new GrowthIndicator();
-    public SecondaryYAxis: SecondaryYAxis = new SecondaryYAxis();
+    public XAxisSettings: XAxisSettings = new XAxisSettings();
+    public YAxisSettings: YAxisSettings = new YAxisSettings();
+    public TooltipSettings: TooltipSettings = new TooltipSettings();
+    public AnnotationSettings: AnnotationSettings = new AnnotationSettings();
 }
 
-export class SecondaryYAxis {
-    public ToggleOn: boolean = true;
+export class XAxisSettings {
+    public FontFamily: string = 'Calibri';
+    public FontColor: string = '#666666';
+    public FontSize: number = 10;
 
+    public TickCount: number = 10;
+
+    public LabelAngle: number = 0;
+
+    public XOffset: number = 0;
+    public YOffset: number = 0;
+}
+
+
+export class YAxisSettings {
     public MinValue: number = 0;
     public MaxValue: number = 0;
 
     public DisplayUnits: string = 'auto';
     public DisplayDigits: number = 1;
 
-    public TickCount: number = 3;
+    public TickCount: number = 6;
 
     public FontFamily: string = 'Calibri';
     public FontColor: string = '#666666';
     public FontSize: number = 10;
+}
+
+export class TooltipSettings {
+    public ToggleTooltip: boolean = true;
+
+    public TooltipColour: string = '#4682b4';
 }
 
 export class GrowthIndicator {
@@ -56,4 +77,22 @@ export class GrowthIndicator {
     public Selector1: string = '';
     public Selector2: string = '';
 
+    public IncreasingColour: string = '#32CD32';
+    public DecreasingColour: string = '#FF0000';
+
+    public ShowArrow: boolean = true;
+    public ArrowSize: number = 50;
+
+}
+
+export class AnnotationSettings {
+    public ToggleAnnotations: boolean = true;
+
+    public FontFamily: string = 'Calibri';
+    public FontColor: string = '#666666';
+    public FontSize: number = 10;
+
+    public LineColor: string = '#666666';
+    public LineThickness: number = 1;
+    public LineStyle: string = 'solid';
 }

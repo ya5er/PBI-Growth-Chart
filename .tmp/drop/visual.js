@@ -9,7 +9,7 @@ var annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG;
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Jx: () => (/* binding */ VisualSettings)
 /* harmony export */ });
-/* unused harmony exports SecondaryYAxis, GrowthIndicator */
+/* unused harmony exports XAxisSettings, YAxisSettings, TooltipSettings, GrowthIndicator, AnnotationSettings */
 /* harmony import */ var powerbi_visuals_utils_dataviewutils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(24554);
 /*
  *  Power BI Visualizations
@@ -43,20 +43,39 @@ class VisualSettings extends DataViewObjectsParser {
     constructor() {
         super(...arguments);
         this.GrowthIndicator = new GrowthIndicator();
-        this.SecondaryYAxis = new SecondaryYAxis();
+        this.XAxisSettings = new XAxisSettings();
+        this.YAxisSettings = new YAxisSettings();
+        this.TooltipSettings = new TooltipSettings();
+        this.AnnotationSettings = new AnnotationSettings();
     }
 }
-class SecondaryYAxis {
+class XAxisSettings {
     constructor() {
-        this.ToggleOn = true;
+        this.FontFamily = 'Calibri';
+        this.FontColor = '#666666';
+        this.FontSize = 10;
+        this.TickCount = 10;
+        this.LabelAngle = 0;
+        this.XOffset = 0;
+        this.YOffset = 0;
+    }
+}
+class YAxisSettings {
+    constructor() {
         this.MinValue = 0;
         this.MaxValue = 0;
         this.DisplayUnits = 'auto';
         this.DisplayDigits = 1;
-        this.TickCount = 3;
+        this.TickCount = 6;
         this.FontFamily = 'Calibri';
         this.FontColor = '#666666';
         this.FontSize = 10;
+    }
+}
+class TooltipSettings {
+    constructor() {
+        this.ToggleTooltip = true;
+        this.TooltipColour = '#4682b4';
     }
 }
 class GrowthIndicator {
@@ -64,6 +83,21 @@ class GrowthIndicator {
         this.ToggleGrowthIndicator = true;
         this.Selector1 = '';
         this.Selector2 = '';
+        this.IncreasingColour = '#32CD32';
+        this.DecreasingColour = '#FF0000';
+        this.ShowArrow = true;
+        this.ArrowSize = 50;
+    }
+}
+class AnnotationSettings {
+    constructor() {
+        this.ToggleAnnotations = true;
+        this.FontFamily = 'Calibri';
+        this.FontColor = '#666666';
+        this.FontSize = 10;
+        this.LineColor = '#666666';
+        this.LineThickness = 1;
+        this.LineStyle = 'solid';
     }
 }
 
@@ -99,9 +133,12 @@ class Visual {
     update(options) {
         console.log('Visual update', options);
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
+        let settings = this.settings;
         console.log(this.settings);
         // Clear down existing plot
         this.container.selectAll('*').remove();
+        // Remove tooltip in case of glitch
+        d3__WEBPACK_IMPORTED_MODULE_2__/* .select */ .Ys('body').selectAll('div.tooltip').remove();
         console.log(options.dataViews);
         // Test 1: Data view has both fields added
         let dataViews = options.dataViews;
@@ -147,11 +184,12 @@ class Visual {
         // Parse our mapped data and view the output 
         console.log(data);
         // Set the dimensions and margins of the graph
-        var margin = { top: 10, right: 60, bottom: 30, left: 60 }, width = options.viewport.width - margin.left - margin.right, height = options.viewport.height - margin.top - margin.bottom;
+        var margin = { top: 10, right: 70, bottom: 30, left: 60 }, width = options.viewport.width - margin.left - margin.right, height = options.viewport.height - margin.top - margin.bottom;
         // create tooltip div
         const tooltip = d3__WEBPACK_IMPORTED_MODULE_2__/* .select */ .Ys("body")
             .append("div")
-            .attr("class", "tooltip");
+            .attr("class", "tooltip")
+            .style("background-color", this.settings.TooltipSettings.TooltipColour);
         // Append the svg object to the body of the page
         var svg = this.container
             .append("svg")
@@ -165,18 +203,78 @@ class Visual {
             .range([0, width]);
         // Add X axis
         svg.append('g')
+            .classed('x-axis-g', true)
             .attr('transform', 'translate(0,' + height + ')')
-            .call(d3__WEBPACK_IMPORTED_MODULE_2__/* .axisBottom */ .LLu(x));
+            .call(d3__WEBPACK_IMPORTED_MODULE_2__/* .axisBottom */ .LLu(x)
+            .tickFormat(function (date) {
+            if (d3__WEBPACK_IMPORTED_MODULE_2__/* .timeYear */ .jBk(date) < date) {
+                return d3__WEBPACK_IMPORTED_MODULE_2__/* .timeFormat */ .i$Z('%b')(date);
+            }
+            else {
+                return d3__WEBPACK_IMPORTED_MODULE_2__/* .timeFormat */ .i$Z('%Y')(date);
+            }
+        })
+            .ticks(this.settings.XAxisSettings.TickCount))
+            .call(g => {
+            // font settings
+            g.selectAll('.x-axis-g text')
+                .style('fill', this.settings.XAxisSettings.FontColor)
+                .style('font-family', this.settings.XAxisSettings.FontFamily)
+                .style('font-size', this.settings.XAxisSettings.FontSize);
+            g.selectAll('.x-axis-g text')
+                .attr('transform', `translate(${this.settings.XAxisSettings.XOffset}, ${-this.settings.XAxisSettings.YOffset}) rotate(-${this.settings.XAxisSettings.LabelAngle})`)
+                .style('text-anchor', this.settings.XAxisSettings.LabelAngle ? 'end' : 'middle');
+        });
         // Set Y axis values
-        let minvalue = d3__WEBPACK_IMPORTED_MODULE_2__/* .min */ .VV$(data, function (d) { return +d.value; });
-        let maxvalue = d3__WEBPACK_IMPORTED_MODULE_2__/* .max */ .Fp7(data, function (d) { return +d.value; });
-        let range = maxvalue - minvalue;
+        let minvalue = this.settings.YAxisSettings.MinValue;
+        let maxvalue = this.settings.YAxisSettings.MaxValue <= minvalue ? d3__WEBPACK_IMPORTED_MODULE_2__/* .max */ .Fp7(data, function (d) { return +d.value; }) : this.settings.YAxisSettings.MaxValue;
         var y = d3__WEBPACK_IMPORTED_MODULE_2__/* .scaleLinear */ .BYU()
-            .domain([0, maxvalue + range / 2])
+            .domain([minvalue, maxvalue])
             .range([height, 0]);
         // Add Y axis
         svg.append('g')
-            .call(d3__WEBPACK_IMPORTED_MODULE_2__/* .axisLeft */ .y4O(y));
+            .classed('y-axis-g', true)
+            .call(d3__WEBPACK_IMPORTED_MODULE_2__/* .axisLeft */ .y4O(y)
+            .tickFormat(data => {
+            // formats y-axis labels with appropriate units
+            return nFormatter(parseInt(data.toString()), this.settings.YAxisSettings.DisplayDigits, this.settings.YAxisSettings.DisplayUnits);
+        })
+            .ticks(this.settings.YAxisSettings.TickCount))
+            .call(_ => {
+            d3__WEBPACK_IMPORTED_MODULE_2__/* .selectAll */ .td_('.y-axis-g text')
+                .style('fill', this.settings.YAxisSettings.FontColor)
+                .style('font-family', this.settings.YAxisSettings.FontFamily)
+                .style('font-size', this.settings.YAxisSettings.FontSize);
+        });
+        function nFormatter(num, digits, displayUnits) {
+            // converts 15,000 to 15k and etc
+            let si = [
+                { value: 1, symbol: '', text: 'none' },
+                { value: 1E3, symbol: 'K', text: 'thousands' },
+                { value: 1E6, symbol: 'M', text: 'millions' },
+                { value: 1E9, symbol: 'B', text: 'billions' },
+                { value: 1E12, symbol: 'T', text: 'trillions' },
+                { value: 1E15, symbol: 'P', text: 'quadrillions' },
+                { value: 1E18, symbol: 'E', text: 'quintillions' }
+            ];
+            let i;
+            // converts numbers into largest reasonable units unless otherwise specified
+            if (displayUnits == 'auto') {
+                for (i = si.length - 1; i > 0; i--) {
+                    if (num >= si[i].value) {
+                        break;
+                    }
+                }
+            }
+            else {
+                for (i = 0; i < si.length - 1; i++) {
+                    if (displayUnits == si[i].text) {
+                        break;
+                    }
+                }
+            }
+            return parseFloat((num / si[i].value).toFixed(digits)).toLocaleString() + si[i].symbol;
+        }
         // Add the line
         svg.append('path')
             .datum(data)
@@ -189,47 +287,49 @@ class Visual {
         // Add a circle element
         const circle = svg.append("circle")
             .attr("r", 0)
-            .attr("fill", "steelblue")
+            .attr("fill", this.settings.TooltipSettings.TooltipColour)
             .style("stroke", "white")
             .attr("opacity", .70)
             .style("pointer-events", "none");
         const listeningRect = svg.append("rect")
             .attr("width", width)
             .attr("height", height);
-        // create the mouse move function
-        listeningRect.on("mousemove", function (event) {
-            const [xCoord] = d3__WEBPACK_IMPORTED_MODULE_2__/* .pointer */ .cx$(event, this);
-            const bisectDate = d3__WEBPACK_IMPORTED_MODULE_2__/* .bisector */ .YFb(function (d) { return d.date; }).left;
-            const x0 = x.invert(xCoord);
-            const i = bisectDate(data, x0, 1);
-            const d0 = data[i - 1];
-            const d1 = data[i];
-            const d = x0.valueOf() - d0.date.valueOf() > d1.date.valueOf() - x0.valueOf() ? d1 : d0;
-            const xPos = x(d.date);
-            const yPos = y(d.value);
-            // Update the circle position
-            circle.attr("cx", xPos)
-                .attr("cy", yPos);
-            // Add transition for the circle radius
-            circle.transition()
-                .duration(50)
-                .attr("r", 5);
-            // add in our tooltip
-            tooltip
-                .style("display", "block")
-                .style("left", `${xPos > (width / 2) ? xPos - 75 : xPos + 75}px`)
-                .style("top", `${yPos + 30}px`)
-                .html(`<strong>Date:</strong> ${d.date.toLocaleDateString('en-US')}<br>
-                        <strong>Value:</strong> ${d.value !== undefined ? d.value.toFixed(2) : 'N/A'}<br>
-                        ${d.annotation !== null ? d.annotation : ''}`);
-        });
-        // listening rectangle mouse leave function
-        listeningRect.on("mouseleave", function () {
-            circle.transition()
-                .duration(50)
-                .attr("r", 0);
-            tooltip.style("display", "none");
-        });
+        if (this.settings.TooltipSettings.ToggleTooltip) {
+            // create the mouse move function
+            listeningRect.on("mousemove", function (event) {
+                const [xCoord] = d3__WEBPACK_IMPORTED_MODULE_2__/* .pointer */ .cx$(event, this);
+                const bisectDate = d3__WEBPACK_IMPORTED_MODULE_2__/* .bisector */ .YFb(function (d) { return d.date; }).left;
+                const x0 = x.invert(xCoord);
+                const i = bisectDate(data, x0, 1);
+                const d0 = data[i - 1];
+                const d1 = data[i];
+                const d = x0.valueOf() - d0.date.valueOf() > d1.date.valueOf() - x0.valueOf() ? d1 : d0;
+                const xPos = x(d.date);
+                const yPos = y(d.value);
+                // Update the circle position
+                circle.attr("cx", xPos)
+                    .attr("cy", yPos);
+                // Add transition for the circle radius
+                circle.transition()
+                    .duration(50)
+                    .attr("r", 5);
+                // add in our tooltip
+                tooltip
+                    .style("display", "block")
+                    .style("left", `${xPos > (width / 2) ? xPos - 75 : xPos + 75}px`)
+                    .style("top", `${yPos + 30}px`)
+                    .html(`<strong>Date:</strong> ${d.date.toLocaleDateString('en-US')}<br>
+                            <strong>Value:</strong> ${d.value !== undefined ? d.value.toFixed(2) : 'N/A'}<br>
+                            ${d.annotation !== null ? d.annotation : ''}`);
+            });
+            // listening rectangle mouse leave function
+            listeningRect.on("mouseleave", function () {
+                circle.transition()
+                    .duration(50)
+                    .attr("r", 0);
+                tooltip.style("display", "none");
+            });
+        }
         // Growth Indicator
         if (this.settings.GrowthIndicator.ToggleGrowthIndicator) {
             // Get data points selected
@@ -254,7 +354,7 @@ class Visual {
                 .attr("cy", y(growthPoint2.value))
                 .attr("r", 5);
             // Create path
-            let widthOffset = 15;
+            let widthOffset = 20;
             let path = d3__WEBPACK_IMPORTED_MODULE_2__/* .line */ .jvg()([
                 [x(growthPoint1.date), y(growthPoint1.value)],
                 [width + widthOffset, y(growthPoint1.value)],
@@ -275,10 +375,10 @@ class Visual {
             let minY = (y(growthPoint1.value) >= y(growthPoint2.value)) ? y(growthPoint2.value) : y(growthPoint1.value);
             let maxY = (y(growthPoint1.value) >= y(growthPoint2.value)) ? y(growthPoint1.value) : y(growthPoint2.value);
             // Arrowhead
-            if (Math.abs(growthPercent) >= 2.5) {
+            if (this.settings.GrowthIndicator.ShowArrow) {
                 svg.append('path')
-                    .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .symbol */ .NAG().type(d3__WEBPACK_IMPORTED_MODULE_2__/* .symbolTriangle */ .P67).size(50))
-                    .attr('fill', growthPercent > 0 ? 'limegreen' : 'red')
+                    .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .symbol */ .NAG().type(d3__WEBPACK_IMPORTED_MODULE_2__/* .symbolTriangle */ .P67).size(this.settings.GrowthIndicator.ArrowSize))
+                    .attr('fill', growthPercent > 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
                     .attr('transform', `translate(${width + widthOffset}, ${increasing ? minY : maxY}) rotate(${increasing ? 0 : 60})`);
             }
             let arrowLine = svg.append('line')
@@ -286,7 +386,7 @@ class Visual {
                 .attr('y1', y(growthPoint1.value))
                 .attr('x2', width + widthOffset)
                 .attr('y2', y(growthPoint2.value))
-                .attr('stroke', growthPercent >= 0 ? 'limegreen' : 'red')
+                .attr('stroke', growthPercent >= 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
                 .attr('stroke-width', 2);
             let growthText = svg.append('text')
                 .attr('fill', 'black')
@@ -357,24 +457,27 @@ class Visual {
         });
         // Update annotation after being dragged
         function update() {
-            let fontsize = 11;
+            let fontsize = settings.AnnotationSettings.FontSize;
             newTextElements
                 .data(annotations)
                 .join('text')
                 .attr('x', function (d) { return d.x; })
                 .attr('y', function (d) { return d.y; })
                 .attr('font-size', fontsize)
+                .style('fill', settings.AnnotationSettings.FontColor)
+                .style('font-family', settings.AnnotationSettings.FontFamily)
                 .text(function (d) { return d.text; })
                 .call(drag);
             newLineElements
                 .data(annotations)
                 .join(enter => enter.append('line')
+                .classed('annotationLine', true)
                 .attr("x1", function (d) { return d.graphx; })
                 .attr("y1", function (d) { return d.graphy; })
                 .attr("x2", function (d) { return d.graphx; })
                 .attr("y2", function (d) { return d.graphy; })
-                .attr('stroke', 'black')
-                .attr('stroke-width', 1), update => update.attr("x1", function (d) { return d.graphx; })
+                .attr('stroke', settings.AnnotationSettings.LineColor)
+                .attr('stroke-width', settings.AnnotationSettings.LineThickness), update => update.attr("x1", function (d) { return d.graphx; })
                 .attr("y1", function (d) { return d.graphy; })
                 .attr("x2", function (d) {
                 return d.x + d.text.length * (fontsize / 4.5);
@@ -382,8 +485,15 @@ class Visual {
                 .attr("y2", function (d) {
                 return (d.y > d.graphy ? d.y - fontsize : d.y + fontsize / 2);
             }));
+            // set line type (if dashed is selected)
+            if (settings.AnnotationSettings.LineStyle == 'dashed') {
+                svg.selectAll('.annotationLine')
+                    .attr('stroke-dasharray', '5,4');
+            }
         }
-        update();
+        if (settings.AnnotationSettings.ToggleAnnotations) {
+            update();
+        }
         // Update the newTextElements and newLineElements variables to include the annotations
         newTextElements = svg.selectAll('text')
             .filter(function (_, i) {
@@ -12944,14 +13054,12 @@ function extent(values, valueof) {
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Fp: () => (/* reexport safe */ _max_js__WEBPACK_IMPORTED_MODULE_2__.Z),
-/* harmony export */   VV: () => (/* reexport safe */ _min_js__WEBPACK_IMPORTED_MODULE_3__.Z),
 /* harmony export */   We: () => (/* reexport safe */ _extent_js__WEBPACK_IMPORTED_MODULE_1__.Z),
 /* harmony export */   YF: () => (/* reexport safe */ _bisector_js__WEBPACK_IMPORTED_MODULE_0__.Z)
 /* harmony export */ });
 /* harmony import */ var _bisector_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(40477);
 /* harmony import */ var _extent_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9089);
 /* harmony import */ var _max_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(18776);
-/* harmony import */ var _min_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(88398);
 
 
 
@@ -13039,37 +13147,6 @@ function max(values, valueof) {
     }
   }
   return max;
-}
-
-
-/***/ }),
-
-/***/ 88398:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   Z: () => (/* binding */ min)
-/* harmony export */ });
-function min(values, valueof) {
-  let min;
-  if (valueof === undefined) {
-    for (const value of values) {
-      if (value != null
-          && (min > value || (min === undefined && value >= value))) {
-        min = value;
-      }
-    }
-  } else {
-    let index = -1;
-    for (let value of values) {
-      if ((value = valueof(value, ++index, values)) != null
-          && (min > value || (min === undefined && value >= value))) {
-        min = value;
-      }
-    }
-  }
-  return min;
 }
 
 
@@ -16809,10 +16886,12 @@ function creatorFixed(fullname) {
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Ys: () => (/* reexport safe */ _select_js__WEBPACK_IMPORTED_MODULE_1__.Z),
-/* harmony export */   cx: () => (/* reexport safe */ _pointer_js__WEBPACK_IMPORTED_MODULE_0__.Z)
+/* harmony export */   cx: () => (/* reexport safe */ _pointer_js__WEBPACK_IMPORTED_MODULE_0__.Z),
+/* harmony export */   td: () => (/* reexport safe */ _selectAll_js__WEBPACK_IMPORTED_MODULE_2__.Z)
 /* harmony export */ });
 /* harmony import */ var _pointer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(73109);
 /* harmony import */ var _select_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(23838);
+/* harmony import */ var _selectAll_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(264);
 
 
 
@@ -16942,6 +17021,27 @@ var xhtml = "http://www.w3.org/1999/xhtml";
   return typeof selector === "string"
       ? new _selection_index_js__WEBPACK_IMPORTED_MODULE_0__/* .Selection */ .Y1([[document.querySelector(selector)]], [document.documentElement])
       : new _selection_index_js__WEBPACK_IMPORTED_MODULE_0__/* .Selection */ .Y1([[selector]], _selection_index_js__WEBPACK_IMPORTED_MODULE_0__/* .root */ .Jz);
+}
+
+
+/***/ }),
+
+/***/ 264:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Z: () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _array_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(79898);
+/* harmony import */ var _selection_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(28390);
+
+
+
+/* harmony default export */ function __WEBPACK_DEFAULT_EXPORT__(selector) {
+  return typeof selector === "string"
+      ? new _selection_index_js__WEBPACK_IMPORTED_MODULE_0__/* .Selection */ .Y1([document.querySelectorAll(selector)], [document.documentElement])
+      : new _selection_index_js__WEBPACK_IMPORTED_MODULE_0__/* .Selection */ .Y1([(0,_array_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"] */ .Z)(selector)], _selection_index_js__WEBPACK_IMPORTED_MODULE_0__/* .root */ .Jz);
 }
 
 
@@ -18429,8 +18529,8 @@ Linear.prototype = {
 /* harmony export */   jv: () => (/* reexport safe */ _line_js__WEBPACK_IMPORTED_MODULE_0__.Z)
 /* harmony export */ });
 /* harmony import */ var _line_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(47281);
-/* harmony import */ var _symbol_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(474);
-/* harmony import */ var _symbol_triangle_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(658);
+/* harmony import */ var _symbol_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(40474);
+/* harmony import */ var _symbol_triangle_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(36658);
 
 
 
@@ -18562,7 +18662,7 @@ Linear.prototype = {
 
 /***/ }),
 
-/***/ 978:
+/***/ 41978:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -18649,7 +18749,7 @@ function y(p) {
 
 /***/ }),
 
-/***/ 474:
+/***/ 40474:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -18659,19 +18759,19 @@ function y(p) {
 /* unused harmony exports symbolsFill, symbolsStroke */
 /* harmony import */ var _constant_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(20309);
 /* harmony import */ var _path_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(78229);
-/* harmony import */ var _symbol_asterisk_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(350);
-/* harmony import */ var _symbol_circle_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(811);
-/* harmony import */ var _symbol_cross_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(170);
-/* harmony import */ var _symbol_diamond_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(841);
-/* harmony import */ var _symbol_diamond2_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(675);
-/* harmony import */ var _symbol_plus_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(383);
-/* harmony import */ var _symbol_square_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(783);
-/* harmony import */ var _symbol_square2_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(765);
-/* harmony import */ var _symbol_star_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(960);
-/* harmony import */ var _symbol_triangle_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(658);
-/* harmony import */ var _symbol_triangle2_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(311);
-/* harmony import */ var _symbol_wye_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(161);
-/* harmony import */ var _symbol_times_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(919);
+/* harmony import */ var _symbol_asterisk_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(14350);
+/* harmony import */ var _symbol_circle_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(98811);
+/* harmony import */ var _symbol_cross_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(52170);
+/* harmony import */ var _symbol_diamond_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(15841);
+/* harmony import */ var _symbol_diamond2_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(41675);
+/* harmony import */ var _symbol_plus_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(18383);
+/* harmony import */ var _symbol_square_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(70783);
+/* harmony import */ var _symbol_square2_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(79765);
+/* harmony import */ var _symbol_star_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(78960);
+/* harmony import */ var _symbol_triangle_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(36658);
+/* harmony import */ var _symbol_triangle2_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(46311);
+/* harmony import */ var _symbol_wye_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(38161);
+/* harmony import */ var _symbol_times_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(94842);
 
 
 
@@ -18742,14 +18842,14 @@ function Symbol(type, size) {
 
 /***/ }),
 
-/***/ 350:
+/***/ 14350:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 const sqrt3 = (0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .sqrt */ ._b)(3);
@@ -18771,14 +18871,14 @@ const sqrt3 = (0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .sqrt */ ._b)(3);
 
 /***/ }),
 
-/***/ 811:
+/***/ 98811:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -18792,14 +18892,14 @@ const sqrt3 = (0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .sqrt */ ._b)(3);
 
 /***/ }),
 
-/***/ 170:
+/***/ 52170:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -18824,14 +18924,14 @@ const sqrt3 = (0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .sqrt */ ._b)(3);
 
 /***/ }),
 
-/***/ 841:
+/***/ 15841:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 const tan30 = (0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .sqrt */ ._b)(1 / 3);
@@ -18852,14 +18952,14 @@ const tan30_2 = tan30 * 2;
 
 /***/ }),
 
-/***/ 675:
+/***/ 41675:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -18876,14 +18976,14 @@ const tan30_2 = tan30 * 2;
 
 /***/ }),
 
-/***/ 383:
+/***/ 18383:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -18899,14 +18999,14 @@ const tan30_2 = tan30 * 2;
 
 /***/ }),
 
-/***/ 783:
+/***/ 70783:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -18920,14 +19020,14 @@ const tan30_2 = tan30 * 2;
 
 /***/ }),
 
-/***/ 765:
+/***/ 79765:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -18944,14 +19044,14 @@ const tan30_2 = tan30 * 2;
 
 /***/ }),
 
-/***/ 960:
+/***/ 78960:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 const ka = 0.89081309152928522810;
@@ -18980,14 +19080,14 @@ const ky = -(0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .cos */ .mC)(_math_js__WE
 
 /***/ }),
 
-/***/ 919:
+/***/ 94842:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -19003,14 +19103,14 @@ const ky = -(0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .cos */ .mC)(_math_js__WE
 
 /***/ }),
 
-/***/ 658:
+/***/ 36658:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 const sqrt3 = (0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .sqrt */ ._b)(3);
@@ -19028,14 +19128,14 @@ const sqrt3 = (0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .sqrt */ ._b)(3);
 
 /***/ }),
 
-/***/ 311:
+/***/ 46311:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 const sqrt3 = (0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .sqrt */ ._b)(3);
@@ -19055,14 +19155,14 @@ const sqrt3 = (0,_math_js__WEBPACK_IMPORTED_MODULE_0__/* .sqrt */ ._b)(3);
 
 /***/ }),
 
-/***/ 161:
+/***/ 38161:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Z: () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(978);
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(41978);
 
 
 const c = -0.5;
@@ -19128,6 +19228,22 @@ function defaultLocale(definition) {
   utcParse = locale.utcParse;
   return locale;
 }
+
+
+/***/ }),
+
+/***/ 809:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   i$: () => (/* reexport safe */ _defaultLocale_js__WEBPACK_IMPORTED_MODULE_0__.i$)
+/* harmony export */ });
+/* harmony import */ var _defaultLocale_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(82138);
+
+
+
+
 
 
 /***/ }),
@@ -19944,6 +20060,37 @@ const utcHour = (0,_interval_js__WEBPACK_IMPORTED_MODULE_0__/* .timeInterval */ 
 });
 
 const utcHours = utcHour.range;
+
+
+/***/ }),
+
+/***/ 712:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   jB: () => (/* reexport safe */ _year_js__WEBPACK_IMPORTED_MODULE_0__.jB)
+/* harmony export */ });
+/* harmony import */ var _year_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(38887);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /***/ }),
@@ -22395,14 +22542,16 @@ function defaultConstrain(transform, extent, translateExtent) {
 /* harmony export */   LLu: () => (/* reexport safe */ d3_axis__WEBPACK_IMPORTED_MODULE_1__.LL),
 /* harmony export */   NAG: () => (/* reexport safe */ d3_shape__WEBPACK_IMPORTED_MODULE_6__.NA),
 /* harmony export */   P67: () => (/* reexport safe */ d3_shape__WEBPACK_IMPORTED_MODULE_6__.P6),
-/* harmony export */   VV$: () => (/* reexport safe */ d3_array__WEBPACK_IMPORTED_MODULE_0__.VV),
 /* harmony export */   Wem: () => (/* reexport safe */ d3_array__WEBPACK_IMPORTED_MODULE_0__.We),
 /* harmony export */   Xf: () => (/* reexport safe */ d3_scale__WEBPACK_IMPORTED_MODULE_4__.Xf),
 /* harmony export */   YFb: () => (/* reexport safe */ d3_array__WEBPACK_IMPORTED_MODULE_0__.YF),
 /* harmony export */   Ys: () => (/* reexport safe */ d3_selection__WEBPACK_IMPORTED_MODULE_5__.Ys),
 /* harmony export */   cx$: () => (/* reexport safe */ d3_selection__WEBPACK_IMPORTED_MODULE_5__.cx),
+/* harmony export */   i$Z: () => (/* reexport safe */ d3_time_format__WEBPACK_IMPORTED_MODULE_8__.i$),
+/* harmony export */   jBk: () => (/* reexport safe */ d3_time__WEBPACK_IMPORTED_MODULE_7__.jB),
 /* harmony export */   jvg: () => (/* reexport safe */ d3_shape__WEBPACK_IMPORTED_MODULE_6__.jv),
 /* harmony export */   ohM: () => (/* reexport safe */ d3_drag__WEBPACK_IMPORTED_MODULE_3__.oh),
+/* harmony export */   td_: () => (/* reexport safe */ d3_selection__WEBPACK_IMPORTED_MODULE_5__.td),
 /* harmony export */   y4O: () => (/* reexport safe */ d3_axis__WEBPACK_IMPORTED_MODULE_1__.y4)
 /* harmony export */ });
 /* harmony import */ var d3_array__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(95665);
@@ -22412,8 +22561,10 @@ function defaultConstrain(transform, extent, translateExtent) {
 /* harmony import */ var d3_scale__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(51770);
 /* harmony import */ var d3_selection__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(3950);
 /* harmony import */ var d3_shape__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(18285);
-/* harmony import */ var d3_transition__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(3399);
-/* harmony import */ var d3_zoom__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(35180);
+/* harmony import */ var d3_time__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(712);
+/* harmony import */ var d3_time_format__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(809);
+/* harmony import */ var d3_transition__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(3399);
+/* harmony import */ var d3_zoom__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(35180);
 
 
 

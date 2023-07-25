@@ -56,15 +56,62 @@
                 }
             }
         },
-        "SecondaryYAxis": {
-            "displayName": "Secondary Y-Axis",
+        "XAxisSettings": {
+            "displayName": "X-Axis",
             "properties": {
-                "ToggleOn": {
-                    "displayName": "Show Axis Labels",
+                "FontFamily": {
+                    "displayName": "Font",
                     "type": {
-                        "bool": true
+                        "formatting": {
+                            "fontFamily": true
+                        }
                     }
                 },
+                "FontColor": {
+                    "displayName": "Font Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "FontSize": {
+                    "displayName": "Font Size",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "TickCount": {
+                    "displayName": "Axis Tick Count",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "LabelAngle": {
+                    "displayName": "Label Rotation",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "XOffset": {
+                    "displayName": "Label X-Offset",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "YOffset": {
+                    "displayName": "Label Y-Offset",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
+        "YAxisSettings": {
+            "displayName": "Y-Axis",
+            "properties": {
                 "MinValue": {
                     "displayName": "Min Value",
                     "type": {
@@ -121,7 +168,7 @@
                     }
                 },
                 "FontFamily": {
-                    "displayName": "Font Family",
+                    "displayName": "Font",
                     "type": {
                         "formatting": {
                             "fontFamily": true
@@ -142,6 +189,27 @@
                     "displayName": "Font Size",
                     "type": {
                         "numeric": true
+                    }
+                }
+            }
+        },
+        "TooltipSettings": {
+            "displayName": "Tooltip",
+            "properties": {
+                "ToggleTooltip": {
+                    "displayName": "Show Tooltip",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "TooltipColour": {
+                    "displayName": "Tooltip Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
                     }
                 }
             }
@@ -167,6 +235,104 @@
                     "description": "MM-DD-YYYY",
                     "type": {
                         "text": true
+                    }
+                },
+                "IncreasingColour": {
+                    "displayName": "Increasing Line Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "DecreasingColour": {
+                    "displayName": "Decreasing Line Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "ShowArrow": {
+                    "displayName": "Show Arrow",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "ArrowSize": {
+                    "displayName": "Arrow Size",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
+        "AnnotationSettings": {
+            "displayName": "Annotations",
+            "properties": {
+                "ToggleAnnotations": {
+                    "displayName": "Show Annotations",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "FontFamily": {
+                    "displayName": "Annotation Font",
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "FontColor": {
+                    "displayName": "Annotation Font Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "FontSize": {
+                    "displayName": "Annotation Font Size",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "LineColor": {
+                    "displayName": "Line Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "LineThickness": {
+                    "displayName": "Line Thickness",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "LineStyle": {
+                    "displayName": "Line Style",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "value": "solid",
+                                "displayName": "Solid"
+                            },
+                            {
+                                "value": "dashed",
+                                "displayName": "Dashed"
+                            }
+                        ]
                     }
                 }
             }
