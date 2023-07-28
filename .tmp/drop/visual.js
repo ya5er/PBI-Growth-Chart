@@ -9,7 +9,7 @@ var annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG;
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Jx: () => (/* binding */ VisualSettings)
 /* harmony export */ });
-/* unused harmony exports XAxisSettings, YAxisSettings, TooltipSettings, GrowthIndicator, AnnotationSettings */
+/* unused harmony exports LineSettings, XAxisSettings, YAxisSettings, TooltipSettings, GrowthIndicator, AnnotationSettings */
 /* harmony import */ var powerbi_visuals_utils_dataviewutils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(24554);
 /*
  *  Power BI Visualizations
@@ -47,6 +47,12 @@ class VisualSettings extends DataViewObjectsParser {
         this.YAxisSettings = new YAxisSettings();
         this.TooltipSettings = new TooltipSettings();
         this.AnnotationSettings = new AnnotationSettings();
+        this.LineSettings = new LineSettings();
+    }
+}
+class LineSettings {
+    constructor() {
+        this.LineColor = '#4682B4';
     }
 }
 class XAxisSettings {
@@ -129,6 +135,7 @@ class Visual {
         this.container = d3__WEBPACK_IMPORTED_MODULE_2__/* .select */ .Ys(this.target)
             .append('div')
             .attr('id', 'my_dataviz');
+        this.annotations = [];
     }
     update(options) {
         console.log('Visual update', options);
@@ -279,7 +286,7 @@ class Visual {
         svg.append('path')
             .datum(data)
             .attr('fill', 'none')
-            .attr('stroke', 'steelblue')
+            .attr('stroke', settings.LineSettings.LineColor)
             .attr('stroke-width', 1.5)
             .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .line */ .jvg()
             .x(function (d) { return x(d.date); })
@@ -345,11 +352,13 @@ class Visual {
             // Draw circles on points selected
             let growthCircle1 = svg.append("circle")
                 .attr("class", "graphPoint")
+                .attr("fill", settings.LineSettings.LineColor)
                 .attr("cx", x(growthPoint1.date))
                 .attr("cy", y(growthPoint1.value))
                 .attr("r", 5);
             let growthCircle2 = svg.append("circle")
                 .attr("class", "graphPoint")
+                .attr("fill", settings.LineSettings.LineColor)
                 .attr("cx", x(growthPoint2.date))
                 .attr("cy", y(growthPoint2.value))
                 .attr("r", 5);
@@ -417,7 +426,7 @@ class Visual {
             .on("drag", dragged)
             .on("end", dragended);
         function dragstarted(event, d) {
-            d3__WEBPACK_IMPORTED_MODULE_2__/* .select */ .Ys(this).raise().attr("stroke", "black");
+            //d3.select(this).raise().attr("stroke", "black");
         }
         function dragged(event, d) {
             d3__WEBPACK_IMPORTED_MODULE_2__/* .select */ .Ys(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
@@ -426,25 +435,28 @@ class Visual {
         function dragended(event, d) {
             d3__WEBPACK_IMPORTED_MODULE_2__/* .select */ .Ys(this).attr("stroke", null);
         }
-        let annotations = [];
+        //let annotations = []
         // Count the number of existing text and line elements
         const existingTextCount = svg.selectAll('text').size();
         const existingLineCount = svg.selectAll('line').size();
         // Loop through rows to create annotations
-        data.forEach((row, idx) => {
-            if (row.annotation != null) {
-                annotations.push({
-                    id: annotations.length,
-                    x: x(row.date),
-                    y: y(row.value),
-                    graphx: x(row.date),
-                    graphy: y(row.value),
-                    value: row.value,
-                    text: row.annotation
-                });
-            }
-        });
-        console.log(annotations);
+        if (this.annotations.length == 0) {
+            data.forEach((row, idx) => {
+                if (row.annotation != null) {
+                    this.annotations.push({
+                        id: this.annotations.length,
+                        x: x(row.date),
+                        y: y(row.value),
+                        graphx: x(row.date),
+                        graphy: y(row.value),
+                        value: row.value,
+                        date: row.date,
+                        text: row.annotation
+                    });
+                }
+            });
+        }
+        console.log(this.annotations);
         // Filter out the text/line elements based on their indices, 
         //  so that only the annotations are included
         let newTextElements = svg.selectAll('text')
@@ -455,10 +467,11 @@ class Visual {
             .filter(function (_, i) {
             return i >= existingLineCount;
         });
+        let annotations = this.annotations;
         // Update annotation after being dragged
         function update() {
             let fontsize = settings.AnnotationSettings.FontSize;
-            newTextElements
+            svg.selectAll('.annotationText')
                 .data(annotations)
                 .join('text')
                 .attr('x', function (d) { return d.x; })
@@ -466,19 +479,20 @@ class Visual {
                 .attr('font-size', fontsize)
                 .style('fill', settings.AnnotationSettings.FontColor)
                 .style('font-family', settings.AnnotationSettings.FontFamily)
-                .text(function (d) { return d.text; })
-                .call(drag);
-            newLineElements
+                .text(function (d) { return d.text; });
+            //.call(drag);
+            // rewrite the way drag is called, initialize it one way and update another way
+            svg.selectAll('.annotationLine')
                 .data(annotations)
                 .join(enter => enter.append('line')
                 .classed('annotationLine', true)
-                .attr("x1", function (d) { return d.graphx; })
-                .attr("y1", function (d) { return d.graphy; })
-                .attr("x2", function (d) { return d.graphx; })
-                .attr("y2", function (d) { return d.graphy; })
+                .attr("x1", function (d) { return x(d.date); })
+                .attr("y1", function (d) { return y(d.value); })
+                .attr("x2", function (d) { return d.x; })
+                .attr("y2", function (d) { return d.y; })
                 .attr('stroke', settings.AnnotationSettings.LineColor)
-                .attr('stroke-width', settings.AnnotationSettings.LineThickness), update => update.attr("x1", function (d) { return d.graphx; })
-                .attr("y1", function (d) { return d.graphy; })
+                .attr('stroke-width', settings.AnnotationSettings.LineThickness), update => update.attr("x1", function (d) { return x(d.date); })
+                .attr("y1", function (d) { return y(d.value); })
                 .attr("x2", function (d) {
                 return d.x + d.text.length * (fontsize / 4.5);
             })
@@ -492,7 +506,45 @@ class Visual {
             }
         }
         if (settings.AnnotationSettings.ToggleAnnotations) {
-            update();
+            // update();
+            svg.selectAll('.annotationText')
+                .data(this.annotations)
+                .join('text')
+                .classed('annotationText', true)
+                .attr('x', function (d) { return d.x; })
+                .attr('y', function (d) { return d.y; })
+                .attr('font-size', settings.AnnotationSettings.FontSize)
+                .style('fill', settings.AnnotationSettings.FontColor)
+                .style('font-family', settings.AnnotationSettings.FontFamily)
+                .text(function (d) { return d.text; });
+            svg.selectAll('.annotationText')
+                .call(drag);
+            svg.selectAll('.annotationLine')
+                .data(this.annotations)
+                .join(enter => enter.append('line')
+                .classed('annotationLine', true)
+                .attr("x1", function (d) { return x(d.date); })
+                .attr("y1", function (d) { return y(d.value); })
+                .attr("x2", function (d) {
+                return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5);
+            })
+                .attr("y2", function (d) {
+                return (d.y > d.graphy ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+            })
+                .attr('stroke', settings.AnnotationSettings.LineColor)
+                .attr('stroke-width', settings.AnnotationSettings.LineThickness), update => update.attr("x1", function (d) { return x(d.date); })
+                .attr("y1", function (d) { return y(d.value); })
+                .attr("x2", function (d) {
+                return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5);
+            })
+                .attr("y2", function (d) {
+                return (d.y > d.graphy ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+            }));
+            // set line type (if dashed is selected)
+            if (settings.AnnotationSettings.LineStyle == 'dashed') {
+                svg.selectAll('.annotationLine')
+                    .attr('stroke-dasharray', '5,4');
+            }
         }
         // Update the newTextElements and newLineElements variables to include the annotations
         newTextElements = svg.selectAll('text')
@@ -16891,7 +16943,7 @@ function creatorFixed(fullname) {
 /* harmony export */ });
 /* harmony import */ var _pointer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(73109);
 /* harmony import */ var _select_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(23838);
-/* harmony import */ var _selectAll_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(264);
+/* harmony import */ var _selectAll_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(94264);
 
 
 
@@ -17026,7 +17078,7 @@ var xhtml = "http://www.w3.org/1999/xhtml";
 
 /***/ }),
 
-/***/ 264:
+/***/ 94264:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -19232,7 +19284,7 @@ function defaultLocale(definition) {
 
 /***/ }),
 
-/***/ 809:
+/***/ 4809:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -20064,7 +20116,7 @@ const utcHours = utcHour.range;
 
 /***/ }),
 
-/***/ 712:
+/***/ 9712:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -22561,8 +22613,8 @@ function defaultConstrain(transform, extent, translateExtent) {
 /* harmony import */ var d3_scale__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(51770);
 /* harmony import */ var d3_selection__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(3950);
 /* harmony import */ var d3_shape__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(18285);
-/* harmony import */ var d3_time__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(712);
-/* harmony import */ var d3_time_format__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(809);
+/* harmony import */ var d3_time__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(9712);
+/* harmony import */ var d3_time_format__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(4809);
 /* harmony import */ var d3_transition__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(3399);
 /* harmony import */ var d3_zoom__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(35180);
 

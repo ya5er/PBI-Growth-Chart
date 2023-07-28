@@ -56,6 +56,21 @@
                 }
             }
         },
+        "LineSettings": {
+            "displayName": "Line",
+            "properties": {
+                "LineColor": {
+                    "displayName": "Line Colour",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "XAxisSettings": {
             "displayName": "X-Axis",
             "properties": {

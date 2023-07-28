@@ -6,6 +6,10 @@ export declare class VisualSettings extends DataViewObjectsParser {
     YAxisSettings: YAxisSettings;
     TooltipSettings: TooltipSettings;
     AnnotationSettings: AnnotationSettings;
+    LineSettings: LineSettings;
+}
+export declare class LineSettings {
+    LineColor: string;
 }
 export declare class XAxisSettings {
     FontFamily: string;

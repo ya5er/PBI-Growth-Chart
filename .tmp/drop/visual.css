@@ -23,7 +23,6 @@ rect {
   opacity: 0.75;
 }
 .graphPoint {
-  fill: steelblue;
   stroke: white;
   opacity: 0.7;
 }

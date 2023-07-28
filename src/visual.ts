@@ -20,10 +20,22 @@ interface chartRow {
     annotation: string
 };
 
+interface Annotation {
+    id: number,
+    x: number,
+    y: number,
+    graphx: number,
+    graphy: number,
+    value: number,
+    date: Date,
+    text: string
+}
+
 export class Visual implements IVisual {
     private target: HTMLElement;
     private settings: VisualSettings;
     private container: d3.Selection<HTMLDivElement, any, HTMLDivElement, any>;
+    private annotations: Annotation[];
 
     constructor(options: VisualConstructorOptions) {
         console.log('Visual constructor', options);
@@ -33,6 +45,8 @@ export class Visual implements IVisual {
         this.container = d3.select(this.target)
             .append('div')
                 .attr('id', 'my_dataviz');
+
+        this.annotations = [];
     }
 
     public update(options: VisualUpdateOptions) {
@@ -112,7 +126,6 @@ export class Visual implements IVisual {
             height = options.viewport.height - margin.top - margin.bottom;
 
         // create tooltip div
-
         const tooltip = d3.select("body")
             .append("div")
             .attr("class", "tooltip")
@@ -216,7 +229,7 @@ export class Visual implements IVisual {
         svg.append('path')
             .datum(data)
                 .attr('fill', 'none')
-                .attr('stroke', 'steelblue')
+                .attr('stroke', settings.LineSettings.LineColor)
                 .attr('stroke-width', 1.5)
                 .attr('d', d3.line<chartRow>()
                     .x(function(d) { return x(d.date) })
@@ -298,12 +311,14 @@ export class Visual implements IVisual {
             // Draw circles on points selected
             let growthCircle1 = svg.append("circle")
                 .attr("class", "graphPoint")
+                .attr("fill", settings.LineSettings.LineColor)
                 .attr("cx", x(growthPoint1.date))
                 .attr("cy", y(growthPoint1.value))
                 .attr("r", 5);
 
             let growthCircle2 = svg.append("circle")
                 .attr("class", "graphPoint")
+                .attr("fill", settings.LineSettings.LineColor)
                 .attr("cx", x(growthPoint2.date))
                 .attr("cy", y(growthPoint2.value))
                 .attr("r", 5);
@@ -386,7 +401,7 @@ export class Visual implements IVisual {
             .on("end", dragended);
 
         function dragstarted(event, d) {
-            d3.select(this).raise().attr("stroke", "black");
+            //d3.select(this).raise().attr("stroke", "black");
         }
             
         function dragged(event, d) {
@@ -398,28 +413,31 @@ export class Visual implements IVisual {
             d3.select(this).attr("stroke", null);
         }
 
-        let annotations = []
+        //let annotations = []
 
         // Count the number of existing text and line elements
         const existingTextCount = svg.selectAll('text').size();
         const existingLineCount = svg.selectAll('line').size();
 
         // Loop through rows to create annotations
-        data.forEach((row, idx) => {
-            if (row.annotation != null) {
-                annotations.push({
-                    id: annotations.length,
-                    x: x(row.date),
-                    y: y(row.value),
-                    graphx: x(row.date),
-                    graphy: y(row.value),
-                    value: row.value,
-                    text: row.annotation
-                });
-            }
-        });
+        if (this.annotations.length == 0) {
+            data.forEach((row, idx) => {
+                if (row.annotation != null) {
+                    this.annotations.push({
+                        id: this.annotations.length,
+                        x: x(row.date),
+                        y: y(row.value),
+                        graphx: x(row.date),
+                        graphy: y(row.value),
+                        value: row.value,
+                        date: row.date,
+                        text: row.annotation
+                    });
+                }
+            });
+        } 
 
-        console.log(annotations);
+        console.log(this.annotations);
 
         // Filter out the text/line elements based on their indices, 
         //  so that only the annotations are included
@@ -431,39 +449,43 @@ export class Visual implements IVisual {
             .filter(function(_, i) {
                 return i >= existingLineCount;
             });
+
+        let annotations = this.annotations;
         
         // Update annotation after being dragged
         function update() {
             let fontsize = settings.AnnotationSettings.FontSize;
 
-            newTextElements
+            svg.selectAll('.annotationText')
                 .data(annotations)
                 .join('text')
-                .attr('x', function(d) { return d.x; })
-                .attr('y', function(d) { return d.y; })
+                .attr('x', function(d: Annotation) { return d.x; })
+                .attr('y', function(d: Annotation) { return d.y; })
                 .attr('font-size', fontsize)
                 .style('fill', settings.AnnotationSettings.FontColor)
                 .style('font-family', settings.AnnotationSettings.FontFamily)
-                .text(function(d) { return d.text; })
-                .call(drag);
+                .text(function(d: Annotation) { return d.text; });
+                //.call(drag);
+            
+                // rewrite the way drag is called, initialize it one way and update another way
 
-            newLineElements
+            svg.selectAll('.annotationLine')
                 .data(annotations)
                 .join(
                     enter => enter.append('line')
                         .classed('annotationLine', true)
-                        .attr("x1", function(d) { return d.graphx; })
-                        .attr("y1", function(d) { return d.graphy; })
-                        .attr("x2", function(d) { return d.graphx; })
-                        .attr("y2", function(d) { return d.graphy; })
+                        .attr("x1", function(d: Annotation) { return x(d.date); })
+                        .attr("y1", function(d: Annotation) { return y(d.value); })
+                        .attr("x2", function(d: Annotation) { return d.x; })
+                        .attr("y2", function(d: Annotation) { return d.y; })
                         .attr('stroke', settings.AnnotationSettings.LineColor)
                         .attr('stroke-width', settings.AnnotationSettings.LineThickness),
-                    update => update.attr("x1", function(d) { return d.graphx; })
-                        .attr("y1", function(d) { return d.graphy; })
-                        .attr("x2", function(d) { 
+                    update => update.attr("x1", function(d: Annotation) { return x(d.date); })
+                        .attr("y1", function(d: Annotation) { return y(d.value); })
+                        .attr("x2", function(d: Annotation) { 
                             return d.x + d.text.length * (fontsize / 4.5); 
                         })
-                        .attr("y2", function(d) { 
+                        .attr("y2", function(d: Annotation) { 
                             return (d.y > d.graphy ? d.y - fontsize : d.y + fontsize / 2);
                         })
                 );
@@ -476,7 +498,52 @@ export class Visual implements IVisual {
         }
 
         if (settings.AnnotationSettings.ToggleAnnotations){
-            update();
+            // update();
+
+            svg.selectAll('.annotationText')
+                .data(this.annotations)
+                .join('text')
+                .classed('annotationText', true)
+                .attr('x', function(d) { return d.x; })
+                .attr('y', function(d) { return d.y; })
+                .attr('font-size', settings.AnnotationSettings.FontSize)
+                .style('fill', settings.AnnotationSettings.FontColor)
+                .style('font-family', settings.AnnotationSettings.FontFamily)
+                .text(function(d) { return d.text; });
+                
+            svg.selectAll('.annotationText')
+                .call(drag);
+
+            svg.selectAll('.annotationLine')
+            .data(this.annotations)
+            .join(
+                enter => enter.append('line')
+                    .classed('annotationLine', true)
+                    .attr("x1", function(d: Annotation) { return x(d.date); })
+                        .attr("y1", function(d: Annotation) { return y(d.value); })
+                    .attr("x2", function(d: Annotation) { 
+                        return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5); 
+                    })
+                    .attr("y2", function(d: Annotation) { 
+                        return (d.y > d.graphy ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                    })
+                    .attr('stroke', settings.AnnotationSettings.LineColor)
+                    .attr('stroke-width', settings.AnnotationSettings.LineThickness),
+                update => update.attr("x1", function(d: Annotation) { return x(d.date); })
+                    .attr("y1", function(d: Annotation) { return y(d.value); })
+                    .attr("x2", function(d: Annotation) { 
+                        return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5); 
+                    })
+                    .attr("y2", function(d: Annotation) { 
+                        return (d.y > d.graphy ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                    })
+            );
+        
+            // set line type (if dashed is selected)
+            if (settings.AnnotationSettings.LineStyle == 'dashed') {
+                svg.selectAll('.annotationLine')
+                    .attr('stroke-dasharray', '5,4');
+            }
         }
 
         // Update the newTextElements and newLineElements variables to include the annotations

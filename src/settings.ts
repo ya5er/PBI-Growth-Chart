@@ -35,6 +35,11 @@ export class VisualSettings extends DataViewObjectsParser {
     public YAxisSettings: YAxisSettings = new YAxisSettings();
     public TooltipSettings: TooltipSettings = new TooltipSettings();
     public AnnotationSettings: AnnotationSettings = new AnnotationSettings();
+    public LineSettings: LineSettings = new LineSettings();
+}
+
+export class LineSettings {
+    public LineColor: string = '#4682B4';
 }
 
 export class XAxisSettings {
