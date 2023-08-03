@@ -9,7 +9,7 @@ var annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG;
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Jx: () => (/* binding */ VisualSettings)
 /* harmony export */ });
-/* unused harmony exports LineSettings, XAxisSettings, YAxisSettings, TooltipSettings, GrowthIndicator, AnnotationSettings */
+/* unused harmony exports LayoutSettings, LineSettings, XAxisSettings, YAxisSettings, TooltipSettings, PointLabels, GrowthIndicator, SecondaryGrowthIndicator, SecondaryLabelSettings, AnnotationSettings */
 /* harmony import */ var powerbi_visuals_utils_dataviewutils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(24554);
 /*
  *  Power BI Visualizations
@@ -42,17 +42,30 @@ var DataViewObjectsParser = powerbi_visuals_utils_dataviewutils__WEBPACK_IMPORTE
 class VisualSettings extends DataViewObjectsParser {
     constructor() {
         super(...arguments);
-        this.GrowthIndicator = new GrowthIndicator();
+        this.LayoutSettings = new LayoutSettings();
         this.XAxisSettings = new XAxisSettings();
         this.YAxisSettings = new YAxisSettings();
         this.TooltipSettings = new TooltipSettings();
+        this.PointLabels = new PointLabels();
+        this.GrowthIndicator = new GrowthIndicator();
+        this.SecondaryGrowthIndicator = new SecondaryGrowthIndicator();
+        this.SecondaryLabelSettings = new SecondaryLabelSettings();
         this.AnnotationSettings = new AnnotationSettings();
         this.LineSettings = new LineSettings();
+    }
+}
+class LayoutSettings {
+    constructor() {
+        this.ChartTopMargin = 10;
+        this.ChartBottomMargin = 30;
+        this.ChartLeftMargin = 60;
+        this.ChartRightMargin = 70;
     }
 }
 class LineSettings {
     constructor() {
         this.LineColor = '#4682B4';
+        this.LineThickness = 1.5;
     }
 }
 class XAxisSettings {
@@ -82,6 +95,20 @@ class TooltipSettings {
     constructor() {
         this.ToggleTooltip = true;
         this.TooltipColour = '#4682b4';
+        this.TextColour = '#ffffff';
+        this.TextSize = 14;
+    }
+}
+class PointLabels {
+    constructor() {
+        this.TogglePointLabels = false;
+        this.Frequency = 'monthly';
+        this.Value = 'max';
+        this.FontColor = '#000000';
+        this.FontFamily = 'Calibri';
+        this.FontSize = 11;
+        this.XOffset = -5;
+        this.YOffset = 10;
     }
 }
 class GrowthIndicator {
@@ -95,6 +122,29 @@ class GrowthIndicator {
         this.ArrowSize = 50;
     }
 }
+class SecondaryGrowthIndicator {
+    constructor() {
+        this.ToggleGrowthIndicator = true;
+        this.Selector1 = '';
+        this.Selector2 = '';
+    }
+}
+class SecondaryLabelSettings {
+    constructor() {
+        this.Location = 'top';
+        this.LabelBackgroundColor = '#ffffff';
+        this.FontColor = '#000000';
+        this.FontFamily = 'Calibri';
+        this.FontSize = 11;
+        this.BorderColor = '#808080';
+        this.BorderSize = 1;
+        this.LabelOffsetHeight = 20;
+        this.LabelHeight = 10;
+        this.LabelMinWidth = 20;
+        this.ShowSign = true;
+        this.ToggleBgShape = true;
+    }
+}
 class AnnotationSettings {
     constructor() {
         this.ToggleAnnotations = true;
@@ -104,6 +154,8 @@ class AnnotationSettings {
         this.LineColor = '#666666';
         this.LineThickness = 1;
         this.LineStyle = 'solid';
+        this.ShowArrow = false;
+        this.ArrowSize = 40;
     }
 }
 
@@ -171,7 +223,7 @@ class Visual {
             const dateString = row[dateIndex];
             return new Date(dateString);
         });
-        const hasAllTypes = [dateIndex, commentIndex, numberIndex].every((index) => index !== -1);
+        const hasAllTypes = [dateIndex, numberIndex].every((index) => index !== -1);
         // Test 2: Category matches our expected data type (dateTime)
         console.log('Test 2: Table row has all 3 types...');
         if (!hasAllTypes) {
@@ -190,8 +242,57 @@ class Visual {
         }));
         // Parse our mapped data and view the output 
         console.log(data);
+        // Determine if data includes monthly or daily values
+        const timeDifferences = [];
+        let timeType = {
+            monthly: false,
+            daily: false
+        };
+        for (let i = 1; i < data.length; i++) {
+            let timeDiff = data[i].date.getTime() - data[i - 1].date.getTime();
+            timeDiff = timeDiff / (1000 * 60 * 60 * 24); // Convert milliseconds to days
+            timeDifferences.push(timeDiff);
+        }
+        timeDifferences.forEach((diff) => {
+            if (diff >= 28) {
+                timeType.monthly = true;
+            }
+            else {
+                timeType.daily = true;
+            }
+        });
+        // Group data by month
+        function groupDataByMonth(data) {
+            var _a;
+            const groupedData = new Map();
+            for (const dataPoint of data) {
+                const monthYear = `${dataPoint.date.getMonth() + 1}-${dataPoint.date.getFullYear()}`;
+                if (!groupedData.has(monthYear)) {
+                    groupedData.set(monthYear, []);
+                }
+                (_a = groupedData.get(monthYear)) === null || _a === void 0 ? void 0 : _a.push(dataPoint);
+            }
+            return groupedData;
+        }
+        // Group data by year
+        function groupDataByYear(data) {
+            const groupedData = new Map();
+            data.forEach((dataPoint) => {
+                const year = dataPoint.date.getFullYear();
+                if (groupedData.has(year)) {
+                    groupedData.get(year).push(dataPoint);
+                }
+                else {
+                    groupedData.set(year, [dataPoint]);
+                }
+            });
+            return groupedData;
+        }
+        const groupedDataMonthly = groupDataByMonth(data);
+        const groupedDataYearly = groupDataByYear(data);
         // Set the dimensions and margins of the graph
-        var margin = { top: 10, right: 70, bottom: 30, left: 60 }, width = options.viewport.width - margin.left - margin.right, height = options.viewport.height - margin.top - margin.bottom;
+        let ls = settings.LayoutSettings;
+        var margin = { top: ls.ChartTopMargin, right: ls.ChartRightMargin, bottom: ls.ChartBottomMargin, left: ls.ChartLeftMargin }, width = options.viewport.width - margin.left - margin.right, height = options.viewport.height - margin.top - margin.bottom;
         // create tooltip div
         const tooltip = d3__WEBPACK_IMPORTED_MODULE_2__/* .select */ .Ys("body")
             .append("div")
@@ -214,12 +315,11 @@ class Visual {
             .attr('transform', 'translate(0,' + height + ')')
             .call(d3__WEBPACK_IMPORTED_MODULE_2__/* .axisBottom */ .LLu(x)
             .tickFormat(function (date) {
-            if (d3__WEBPACK_IMPORTED_MODULE_2__/* .timeYear */ .jBk(date) < date) {
-                return d3__WEBPACK_IMPORTED_MODULE_2__/* .timeFormat */ .i$Z('%b')(date);
-            }
-            else {
-                return d3__WEBPACK_IMPORTED_MODULE_2__/* .timeFormat */ .i$Z('%Y')(date);
-            }
+            //if (d3.timeYear(date) < date) {
+            return d3__WEBPACK_IMPORTED_MODULE_2__/* .timeFormat */ .i$Z('%b-%y')(date);
+            //} else {
+            //return d3.timeFormat('%Y')(date);
+            //}
         })
             .ticks(this.settings.XAxisSettings.TickCount))
             .call(g => {
@@ -235,8 +335,9 @@ class Visual {
         // Set Y axis values
         let minvalue = this.settings.YAxisSettings.MinValue;
         let maxvalue = this.settings.YAxisSettings.MaxValue <= minvalue ? d3__WEBPACK_IMPORTED_MODULE_2__/* .max */ .Fp7(data, function (d) { return +d.value; }) : this.settings.YAxisSettings.MaxValue;
+        let range = maxvalue - minvalue;
         var y = d3__WEBPACK_IMPORTED_MODULE_2__/* .scaleLinear */ .BYU()
-            .domain([minvalue, maxvalue])
+            .domain([minvalue, maxvalue + range / 4])
             .range([height, 0]);
         // Add Y axis
         svg.append('g')
@@ -287,7 +388,7 @@ class Visual {
             .datum(data)
             .attr('fill', 'none')
             .attr('stroke', settings.LineSettings.LineColor)
-            .attr('stroke-width', 1.5)
+            .attr('stroke-width', settings.LineSettings.LineThickness)
             .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .line */ .jvg()
             .x(function (d) { return x(d.date); })
             .y(function (d) { return y(d.value); }));
@@ -323,11 +424,13 @@ class Visual {
                 // add in our tooltip
                 tooltip
                     .style("display", "block")
-                    .style("left", `${xPos > (width / 2) ? xPos - 75 : xPos + 75}px`)
+                    .style("left", `${xPos > (width / 2) ? (xPos - 85) : xPos + 75}px`)
                     .style("top", `${yPos + 30}px`)
+                    .style("color", settings.TooltipSettings.TextColour)
+                    //.style("font-size", settings.TooltipSettings.TextSize + 'px')
                     .html(`<strong>Date:</strong> ${d.date.toLocaleDateString('en-US')}<br>
                             <strong>Value:</strong> ${d.value !== undefined ? d.value.toFixed(2) : 'N/A'}<br>
-                            ${d.annotation !== null ? d.annotation : ''}`);
+                            ${d.annotation !== null && d.annotation != undefined ? d.annotation : ''}`);
             });
             // listening rectangle mouse leave function
             listeningRect.on("mouseleave", function () {
@@ -337,16 +440,74 @@ class Visual {
                 tooltip.style("display", "none");
             });
         }
+        // Point Labels
+        if (this.settings.PointLabels.TogglePointLabels) {
+            let groupedData;
+            if (settings.PointLabels.Frequency == 'monthly') {
+                groupedData = groupedDataMonthly;
+            }
+            else if (settings.PointLabels.Frequency == 'yearly') {
+                groupedData = groupedDataYearly;
+            }
+            let isMax = settings.PointLabels.Value == 'max';
+            groupedData.forEach((dataPoints) => {
+                let currentVal = dataPoints[0];
+                for (const dataPoint of dataPoints) {
+                    if (isMax ? dataPoint.value >= currentVal.value : dataPoint.value <= currentVal.value) {
+                        currentVal = dataPoint;
+                    }
+                }
+                svg.append("circle")
+                    .attr("class", "graphPoint")
+                    .attr("fill", settings.LineSettings.LineColor)
+                    .attr("cx", x(currentVal.date))
+                    .attr("cy", y(currentVal.value))
+                    .attr("r", 5);
+                svg.append('text')
+                    .attr('fill', settings.PointLabels.FontColor)
+                    .attr('font-size', settings.PointLabels.FontSize)
+                    .attr('font-family', settings.PointLabels.FontFamily)
+                    .attr('dominant-baseline', 'middle')
+                    .attr('y', y(currentVal.value) - settings.PointLabels.YOffset)
+                    .attr('x', x(currentVal.date) + settings.PointLabels.XOffset)
+                    .text(Math.round(currentVal.value * 10) / 10);
+            });
+        }
         // Growth Indicator
         if (this.settings.GrowthIndicator.ToggleGrowthIndicator) {
             // Get data points selected
             let selector1 = this.settings.GrowthIndicator.Selector1;
             let selector2 = this.settings.GrowthIndicator.Selector2;
+            // Determine default position for selector
+            let defaultPoint1;
+            let defaultPoint2;
+            if (groupedDataMonthly.size >= 2) {
+                const month2 = Array.from(groupedDataMonthly.keys()).pop();
+                const month1 = Array.from(groupedDataMonthly.keys()).slice(-2, -1).pop();
+                const month1Data = groupedDataMonthly.get(month1);
+                const month2Data = groupedDataMonthly.get(month2);
+                defaultPoint1 = month1Data[0];
+                for (const dataPoint of month1Data) {
+                    if (dataPoint.value >= defaultPoint1.value) {
+                        defaultPoint1 = dataPoint;
+                    }
+                }
+                defaultPoint2 = month2Data[0];
+                for (const dataPoint of month2Data) {
+                    if (dataPoint.value >= defaultPoint2.value) {
+                        defaultPoint2 = dataPoint;
+                    }
+                }
+            }
+            else {
+                defaultPoint1 = data[data.length - 2];
+                defaultPoint2 = data[data.length - 1];
+            }
             // Check if selectors are valid and find their index
-            let s1Index = (selector1 && (getIndex(selector1, data) != -1)) ? getIndex(selector1, data) : data.length - 2;
-            let s2Index = (selector2 && (getIndex(selector2, data) != -1)) ? getIndex(selector2, data) : data.length - 1;
-            let growthPoint1 = data[s1Index];
-            let growthPoint2 = data[s2Index];
+            let growthPoint1 = (selector1 && (getIndex(selector1, data) != -1)) ? data[getIndex(selector1, data)] : defaultPoint1;
+            let growthPoint2 = (selector2 && (getIndex(selector2, data) != -1)) ? data[getIndex(selector2, data)] : defaultPoint2;
+            // let growthPoint1 = data[s1Index];
+            // let growthPoint2 = data[s2Index];
             console.log(growthPoint1);
             console.log(growthPoint2);
             // Draw circles on points selected
@@ -405,6 +566,135 @@ class Visual {
                 .attr('x', width + widthOffset + 5)
                 .text(growthPercentStr + '%');
         }
+        if (settings.SecondaryGrowthIndicator.ToggleGrowthIndicator) {
+            // Get data points selected
+            let selector1 = this.settings.SecondaryGrowthIndicator.Selector1;
+            let selector2 = this.settings.SecondaryGrowthIndicator.Selector2;
+            // Determine default position for selector
+            let defaultPoint1;
+            let defaultPoint2;
+            if (groupedDataMonthly.size > 12) {
+                const month2 = Array.from(groupedDataMonthly.keys()).pop();
+                const month1 = Array.from(groupedDataMonthly.keys()).slice(-13, -12).pop();
+                console.log(groupedDataMonthly);
+                console.log(month2);
+                const month1Data = groupedDataMonthly.get(month1);
+                const month2Data = groupedDataMonthly.get(month2);
+                defaultPoint1 = month1Data[0];
+                for (const dataPoint of month1Data) {
+                    if (dataPoint.value >= defaultPoint1.value) {
+                        defaultPoint1 = dataPoint;
+                    }
+                }
+                defaultPoint2 = month2Data[0];
+                for (const dataPoint of month2Data) {
+                    if (dataPoint.value >= defaultPoint2.value) {
+                        defaultPoint2 = dataPoint;
+                    }
+                }
+            }
+            else if (groupedDataMonthly.size >= 2) {
+                const month2 = Array.from(groupedDataMonthly.keys()).pop();
+                const month1 = Array.from(groupedDataMonthly.keys()).slice(-2, -1).pop();
+                const month1Data = groupedDataMonthly.get(month1);
+                const month2Data = groupedDataMonthly.get(month2);
+                defaultPoint1 = month1Data[0];
+                for (const dataPoint of month1Data) {
+                    if (dataPoint.value >= defaultPoint1.value) {
+                        defaultPoint1 = dataPoint;
+                    }
+                }
+                defaultPoint2 = month2Data[0];
+                for (const dataPoint of month2Data) {
+                    if (dataPoint.value >= defaultPoint2.value) {
+                        defaultPoint2 = dataPoint;
+                    }
+                }
+            }
+            else {
+                defaultPoint1 = data[data.length - 2];
+                defaultPoint2 = data[data.length - 1];
+            }
+            // Check if selectors are valid and find their index
+            let growthPoint1 = (selector1 && (getIndex(selector1, data) != -1)) ? data[getIndex(selector1, data)] : defaultPoint1;
+            let growthPoint2 = (selector2 && (getIndex(selector2, data) != -1)) ? data[getIndex(selector2, data)] : defaultPoint2;
+            // Draw circles on points selected
+            let growthCircle1 = svg.append("circle")
+                .attr("class", "graphPoint")
+                .attr("fill", settings.LineSettings.LineColor)
+                .attr("cx", x(growthPoint1.date))
+                .attr("cy", y(growthPoint1.value))
+                .attr("r", 5);
+            let growthCircle2 = svg.append("circle")
+                .attr("class", "graphPoint")
+                .attr("fill", settings.LineSettings.LineColor)
+                .attr("cx", x(growthPoint2.date))
+                .attr("cy", y(growthPoint2.value))
+                .attr("r", 5);
+            // Create path
+            let heightOffset = settings.SecondaryLabelSettings.LabelOffsetHeight;
+            let top = (settings.SecondaryLabelSettings.Location == 'top');
+            let lineY = top ? y(y.domain()[1]) + heightOffset : y(settings.YAxisSettings.MinValue) - heightOffset;
+            let path = d3__WEBPACK_IMPORTED_MODULE_2__/* .line */ .jvg()([
+                [x(growthPoint1.date), y(growthPoint1.value)],
+                [x(growthPoint1.date), lineY],
+                [x(growthPoint2.date), lineY],
+                [x(growthPoint2.date), y(growthPoint2.value)]
+            ]);
+            // Draw path
+            svg.append('path')
+                .attr('fill', 'none')
+                .attr('stroke', 'black')
+                .attr('stroke-width', '1')
+                .attr('stroke-dasharray', '5,4')
+                .attr('d', path);
+            let growthPercent = (growthPoint2.value - growthPoint1.value) / growthPoint1.value * 100;
+            growthPercent = Math.round(growthPercent * 10) / 10;
+            let growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
+            let increasing = growthPercent > 0 ? true : false;
+            let averageX = (x(growthPoint1.date) + x(growthPoint2.date)) / 2;
+            if (settings.SecondaryLabelSettings.ToggleBgShape) {
+                let textWidth = getTextWidth(growthPercentStr.toString() + '%', settings.SecondaryLabelSettings);
+                let growthEllipse = svg.append('ellipse')
+                    .attr('rx', settings.SecondaryLabelSettings.LabelMinWidth + 10 > textWidth ? settings.SecondaryLabelSettings.LabelMinWidth : textWidth - 10) // resizes label based on text width
+                    .attr('ry', settings.SecondaryLabelSettings.LabelHeight)
+                    .attr('cx', averageX)
+                    .attr('cy', lineY)
+                    .attr('fill', settings.SecondaryLabelSettings.LabelBackgroundColor)
+                    .attr('stroke', settings.SecondaryLabelSettings.BorderColor)
+                    .attr('stroke-width', settings.SecondaryLabelSettings.BorderSize);
+            }
+            let growthText = svg.append('text')
+                .attr('width', settings.SecondaryLabelSettings.LabelMinWidth)
+                .attr('height', settings.SecondaryLabelSettings.LabelHeight)
+                .attr('fill', settings.SecondaryLabelSettings.FontColor)
+                .attr('font-size', settings.SecondaryLabelSettings.FontSize)
+                .attr('font-family', settings.SecondaryLabelSettings.FontFamily)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('y', lineY)
+                .attr('x', averageX)
+                .text(growthPercentStr.toString() + '%');
+        }
+        // gets displayed width of text
+        function getTextWidth(text, settings) {
+            /*
+            * Param: selector, settings
+            * Returns: width of text based on font size and family
+            */
+            try {
+                let fontFamily = settings.FontFamily;
+                let fontSize = settings.FontSize;
+                let font = fontSize + 'px ' + fontFamily;
+                let canvas = document.createElement('canvas');
+                let context = canvas.getContext("2d");
+                context.font = font;
+                return context.measureText(text).width;
+            }
+            catch (e) {
+                console.error(e);
+            }
+        }
         // get index of selector
         function getIndex(selector, dataArray) {
             /*
@@ -422,23 +712,20 @@ class Visual {
         }
         // Drag functionality
         let drag = d3__WEBPACK_IMPORTED_MODULE_2__/* .drag */ .ohM()
-            .on("start", dragstarted)
-            .on("drag", dragged)
-            .on("end", dragended);
-        function dragstarted(event, d) {
-            //d3.select(this).raise().attr("stroke", "black");
-        }
+            //.on("start", dragstarted)
+            .on("drag", dragged);
+        //.on("end", dragended);
+        // function dragstarted(event, d) {
+        //     d3.select(this).raise().attr("stroke", "black");
+        // }
         function dragged(event, d) {
             d3__WEBPACK_IMPORTED_MODULE_2__/* .select */ .Ys(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
             update();
         }
-        function dragended(event, d) {
-            d3__WEBPACK_IMPORTED_MODULE_2__/* .select */ .Ys(this).attr("stroke", null);
-        }
+        // function dragended(event, d) {
+        //     d3.select(this).attr("stroke", null);
+        // }
         //let annotations = []
-        // Count the number of existing text and line elements
-        const existingTextCount = svg.selectAll('text').size();
-        const existingLineCount = svg.selectAll('line').size();
         // Loop through rows to create annotations
         if (this.annotations.length == 0) {
             data.forEach((row, idx) => {
@@ -447,8 +734,6 @@ class Visual {
                         id: this.annotations.length,
                         x: x(row.date),
                         y: y(row.value),
-                        graphx: x(row.date),
-                        graphy: y(row.value),
                         value: row.value,
                         date: row.date,
                         text: row.annotation
@@ -457,17 +742,14 @@ class Visual {
             });
         }
         console.log(this.annotations);
-        // Filter out the text/line elements based on their indices, 
-        //  so that only the annotations are included
-        let newTextElements = svg.selectAll('text')
-            .filter(function (_, i) {
-            return i >= existingTextCount;
-        });
-        let newLineElements = svg.selectAll('line')
-            .filter(function (_, i) {
-            return i >= existingLineCount;
-        });
         let annotations = this.annotations;
+        function calculateRotationAngle(graphX, graphY, annotationX, annotationY) {
+            const deltaX = graphX - annotationX;
+            const deltaY = graphY - annotationY;
+            const angleRad = Math.atan2(deltaY, deltaX); // Calculate the angle in radians using Math.atan2
+            const angleDeg = (angleRad * 180) / Math.PI; // Convert the angle from radians to degrees
+            return angleDeg;
+        }
         // Update annotation after being dragged
         function update() {
             let fontsize = settings.AnnotationSettings.FontSize;
@@ -481,7 +763,6 @@ class Visual {
                 .style('font-family', settings.AnnotationSettings.FontFamily)
                 .text(function (d) { return d.text; });
             //.call(drag);
-            // rewrite the way drag is called, initialize it one way and update another way
             svg.selectAll('.annotationLine')
                 .data(annotations)
                 .join(enter => enter.append('line')
@@ -497,15 +778,24 @@ class Visual {
                 return d.x + d.text.length * (fontsize / 4.5);
             })
                 .attr("y2", function (d) {
-                return (d.y > d.graphy ? d.y - fontsize : d.y + fontsize / 2);
+                return (d.y > y(d.value) ? d.y - fontsize : d.y + fontsize / 2);
             }));
             // set line type (if dashed is selected)
             if (settings.AnnotationSettings.LineStyle == 'dashed') {
                 svg.selectAll('.annotationLine')
                     .attr('stroke-dasharray', '5,4');
             }
+            if (settings.AnnotationSettings.ShowArrow) {
+                svg.selectAll('.annotationArrow')
+                    .data(annotations)
+                    .join(enter => enter.append('path')
+                    .classed('annotationArrow', true)
+                    .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .symbol */ .NAG().type(d3__WEBPACK_IMPORTED_MODULE_2__/* .symbolTriangle */ .P67).size(60))
+                    .attr('fill', settings.AnnotationSettings.LineColor)
+                    .attr('transform', (d) => `translate(${x(d.date)}, ${d.y > y(d.value) ? y(d.value) + 2 : y(d.value) - 2}) rotate(${calculateRotationAngle(x(d.date), y(d.value), d.x, (d.y > y(d.value) ? d.y - fontsize : d.y + fontsize / 2))})`), update => update.attr('transform', (d) => `translate(${x(d.date)}, ${d.y > y(d.value) ? y(d.value) + 2 : y(d.value) - 2}) rotate(${calculateRotationAngle(x(d.date), y(d.value), d.x, (d.y > y(d.value) ? d.y - fontsize : d.y + fontsize / 2))})`));
+            }
         }
-        if (settings.AnnotationSettings.ToggleAnnotations) {
+        if (settings.AnnotationSettings.ToggleAnnotations && commentIndex >= 0) {
             // update();
             svg.selectAll('.annotationText')
                 .data(this.annotations)
@@ -529,7 +819,7 @@ class Visual {
                 return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5);
             })
                 .attr("y2", function (d) {
-                return (d.y > d.graphy ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                return (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
             })
                 .attr('stroke', settings.AnnotationSettings.LineColor)
                 .attr('stroke-width', settings.AnnotationSettings.LineThickness), update => update.attr("x1", function (d) { return x(d.date); })
@@ -538,23 +828,23 @@ class Visual {
                 return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5);
             })
                 .attr("y2", function (d) {
-                return (d.y > d.graphy ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                return (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
             }));
             // set line type (if dashed is selected)
             if (settings.AnnotationSettings.LineStyle == 'dashed') {
                 svg.selectAll('.annotationLine')
                     .attr('stroke-dasharray', '5,4');
             }
+            if (settings.AnnotationSettings.ShowArrow) {
+                svg.selectAll('.annotationArrow')
+                    .data(this.annotations)
+                    .join(enter => enter.append('path')
+                    .classed('annotationArrow', true)
+                    .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .symbol */ .NAG().type(d3__WEBPACK_IMPORTED_MODULE_2__/* .symbolTriangle */ .P67).size(this.settings.AnnotationSettings.ArrowSize))
+                    .attr('fill', this.settings.AnnotationSettings.LineColor)
+                    .attr('transform', (d) => `translate(${x(d.date)}, ${d.y > y(d.value) ? y(d.value) + 2 : y(d.value) - 2}) rotate(${calculateRotationAngle(x(d.date), y(d.value), d.x, (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2))})`), update => update.attr('transform', (d) => `translate(${x(d.date)}, ${d.y > y(d.value) ? y(d.value) + 2 : y(d.value) - 2}) rotate(${calculateRotationAngle(x(d.date), y(d.value), d.x, (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2))})`));
+            }
         }
-        // Update the newTextElements and newLineElements variables to include the annotations
-        newTextElements = svg.selectAll('text')
-            .filter(function (_, i) {
-            return i >= existingTextCount;
-        });
-        newLineElements = svg.selectAll('line')
-            .filter(function (_, i) {
-            return i >= existingLineCount;
-        });
     }
     static parseSettings(dataView) {
         return _settings__WEBPACK_IMPORTED_MODULE_1__/* .VisualSettings */ .Jx.parse(dataView);
@@ -3046,7 +3336,6 @@ module.exports = function (it) {
 /***/ 17854:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-/* provided dependency */ var window = __webpack_require__(26738);
 var O = 'object';
 var check = function (it) {
   return it && it.Math == Math && it;
@@ -3960,7 +4249,6 @@ exports.f = DESCRIPTORS ? nativeGetOwnPropertyDescriptor : function getOwnProper
 /***/ 1156:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-/* provided dependency */ var window = __webpack_require__(26738);
 var toIndexedObject = __webpack_require__(45656);
 var nativeGetOwnPropertyNames = (__webpack_require__(8006).f);
 
@@ -12927,14 +13215,6 @@ DataViewObjectsParser.InnumerablePropertyPrefix = /^_/;
 
 /***/ }),
 
-/***/ 26738:
-/***/ ((module) => {
-
-"use strict";
-module.exports = Function('return this')();
-
-/***/ }),
-
 /***/ 9757:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -13314,7 +13594,6 @@ function tickStep(start, stop, count) {
 /* harmony export */ });
 /* unused harmony exports axisTop, axisRight */
 /* harmony import */ var _identity_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(82705);
-/* provided dependency */ var window = __webpack_require__(26738);
 
 
 var top = 1,
@@ -20116,37 +20395,6 @@ const utcHours = utcHour.range;
 
 /***/ }),
 
-/***/ 9712:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   jB: () => (/* reexport safe */ _year_js__WEBPACK_IMPORTED_MODULE_0__.jB)
-/* harmony export */ });
-/* harmony import */ var _year_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(38887);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/***/ }),
-
 /***/ 52576:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -20628,7 +20876,6 @@ const utcYears = utcYear.range;
 /* harmony export */   zO: () => (/* binding */ now)
 /* harmony export */ });
 /* unused harmony export timerFlush */
-/* provided dependency */ var window = __webpack_require__(26738);
 var frame = 0, // is an animation frame pending?
     timeout = 0, // is a timeout pending?
     interval = 0, // are any timers active?
@@ -22599,8 +22846,7 @@ function defaultConstrain(transform, extent, translateExtent) {
 /* harmony export */   YFb: () => (/* reexport safe */ d3_array__WEBPACK_IMPORTED_MODULE_0__.YF),
 /* harmony export */   Ys: () => (/* reexport safe */ d3_selection__WEBPACK_IMPORTED_MODULE_5__.Ys),
 /* harmony export */   cx$: () => (/* reexport safe */ d3_selection__WEBPACK_IMPORTED_MODULE_5__.cx),
-/* harmony export */   i$Z: () => (/* reexport safe */ d3_time_format__WEBPACK_IMPORTED_MODULE_8__.i$),
-/* harmony export */   jBk: () => (/* reexport safe */ d3_time__WEBPACK_IMPORTED_MODULE_7__.jB),
+/* harmony export */   i$Z: () => (/* reexport safe */ d3_time_format__WEBPACK_IMPORTED_MODULE_7__.i$),
 /* harmony export */   jvg: () => (/* reexport safe */ d3_shape__WEBPACK_IMPORTED_MODULE_6__.jv),
 /* harmony export */   ohM: () => (/* reexport safe */ d3_drag__WEBPACK_IMPORTED_MODULE_3__.oh),
 /* harmony export */   td_: () => (/* reexport safe */ d3_selection__WEBPACK_IMPORTED_MODULE_5__.td),
@@ -22613,10 +22859,9 @@ function defaultConstrain(transform, extent, translateExtent) {
 /* harmony import */ var d3_scale__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(51770);
 /* harmony import */ var d3_selection__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(3950);
 /* harmony import */ var d3_shape__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(18285);
-/* harmony import */ var d3_time__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(9712);
-/* harmony import */ var d3_time_format__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(4809);
-/* harmony import */ var d3_transition__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(3399);
-/* harmony import */ var d3_zoom__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(35180);
+/* harmony import */ var d3_time_format__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(4809);
+/* harmony import */ var d3_transition__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(3399);
+/* harmony import */ var d3_zoom__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(35180);
 
 
 
@@ -22740,7 +22985,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var _src_visual__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(50856);
-/* provided dependency */ var window = __webpack_require__(26738);
 
 var powerbiKey = "powerbi";
 var powerbi = window[powerbiKey];

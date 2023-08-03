@@ -24,8 +24,6 @@ interface Annotation {
     id: number,
     x: number,
     y: number,
-    graphx: number,
-    graphy: number,
     value: number,
     date: Date,
     text: string
@@ -93,7 +91,7 @@ export class Visual implements IVisual {
             return new Date(dateString);
         });
 
-        const hasAllTypes: boolean = [dateIndex, commentIndex, numberIndex].every((index) => index !== -1);
+        const hasAllTypes: boolean = [dateIndex, numberIndex].every((index) => index !== -1);
             
         // Test 2: Category matches our expected data type (dateTime)
         console.log('Test 2: Table row has all 3 types...');
@@ -120,8 +118,65 @@ export class Visual implements IVisual {
         // Parse our mapped data and view the output 
         console.log(data);
 
+        // Determine if data includes monthly or daily values
+        const timeDifferences = []
+        let timeType = {
+            monthly: false,
+            daily: false
+        };
+
+        for (let i = 1; i < data.length; i++) {
+            let timeDiff = data[i].date.getTime() - data[i - 1].date.getTime();
+            timeDiff = timeDiff / (1000 * 60 * 60 * 24); // Convert milliseconds to days
+            timeDifferences.push(timeDiff);
+        }
+
+        timeDifferences.forEach((diff) => {
+            if (diff >= 28) {
+                timeType.monthly = true;
+            } else {
+                timeType.daily = true;
+            }
+        });
+
+        // Group data by month
+        function groupDataByMonth(data: chartRow[]): Map<string, chartRow[]> {
+            const groupedData = new Map<string, chartRow[]>();
+          
+            for (const dataPoint of data) {
+              const monthYear = `${dataPoint.date.getMonth() + 1}-${dataPoint.date.getFullYear()}`;
+              if (!groupedData.has(monthYear)) {
+                groupedData.set(monthYear, []);
+              }
+              groupedData.get(monthYear)?.push(dataPoint);
+            }
+          
+            return groupedData;
+        }
+
+        // Group data by year
+        function groupDataByYear(data: chartRow[]): Map<number, chartRow[]> {
+            const groupedData: Map<number, chartRow[]> = new Map();
+          
+            data.forEach((dataPoint) => {
+              const year = dataPoint.date.getFullYear();
+          
+              if (groupedData.has(year)) {
+                groupedData.get(year)!.push(dataPoint);
+              } else {
+                groupedData.set(year, [dataPoint]);
+              }
+            });
+          
+            return groupedData;
+          }
+
+        const groupedDataMonthly = groupDataByMonth(data);
+        const groupedDataYearly = groupDataByYear(data);
+
         // Set the dimensions and margins of the graph
-        var margin = {top: 10, right: 70, bottom: 30, left: 60},
+        let ls = settings.LayoutSettings;
+        var margin = {top: ls.ChartTopMargin, right: ls.ChartRightMargin, bottom: ls.ChartBottomMargin, left: ls.ChartLeftMargin},
             width = options.viewport.width - margin.left - margin.right,
             height = options.viewport.height - margin.top - margin.bottom;
 
@@ -151,11 +206,11 @@ export class Visual implements IVisual {
             .attr('transform', 'translate(0,' + height + ')')
             .call(d3.axisBottom(x)
                 .tickFormat(function(date : Date){
-                    if (d3.timeYear(date) < date) {
-                    return d3.timeFormat('%b')(date);
-                    } else {
-                    return d3.timeFormat('%Y')(date);
-                    }
+                    //if (d3.timeYear(date) < date) {
+                        return d3.timeFormat('%b-%y')(date);
+                    //} else {
+                        //return d3.timeFormat('%Y')(date);
+                    //}
                 })
                 .ticks(this.settings.XAxisSettings.TickCount))
             .call(g => {
@@ -173,9 +228,10 @@ export class Visual implements IVisual {
         // Set Y axis values
         let minvalue = this.settings.YAxisSettings.MinValue;
         let maxvalue = this.settings.YAxisSettings.MaxValue <= minvalue ? d3.max(data, function(d) { return +d.value; }) : this.settings.YAxisSettings.MaxValue;
+        let range = maxvalue - minvalue;
 
         var y = d3.scaleLinear()
-            .domain([minvalue, maxvalue])
+            .domain([minvalue, maxvalue + range / 4])
             .range([ height, 0 ]);
         
         // Add Y axis
@@ -230,7 +286,7 @@ export class Visual implements IVisual {
             .datum(data)
                 .attr('fill', 'none')
                 .attr('stroke', settings.LineSettings.LineColor)
-                .attr('stroke-width', 1.5)
+                .attr('stroke-width', settings.LineSettings.LineThickness)
                 .attr('d', d3.line<chartRow>()
                     .x(function(d) { return x(d.date) })
                     .y(function(d) { return y(d.value) })
@@ -275,11 +331,13 @@ export class Visual implements IVisual {
                 // add in our tooltip
                 tooltip
                     .style("display", "block")
-                    .style("left", `${xPos > (width / 2) ? xPos - 75 : xPos + 75}px`)
+                    .style("left", `${xPos > (width / 2) ? (xPos - 85) : xPos + 75}px`)
                     .style("top", `${yPos + 30}px`)
+                    .style("color", settings.TooltipSettings.TextColour)
+                    //.style("font-size", settings.TooltipSettings.TextSize + 'px')
                     .html(`<strong>Date:</strong> ${d.date.toLocaleDateString('en-US')}<br>
                             <strong>Value:</strong> ${d.value !== undefined ? d.value.toFixed(2) : 'N/A'}<br>
-                            ${d.annotation !== null ? d.annotation : ''}`)
+                            ${d.annotation !== null && d.annotation != undefined ? d.annotation : ''}`)
             });
 
             // listening rectangle mouse leave function
@@ -292,18 +350,86 @@ export class Visual implements IVisual {
             });
         }
 
+        // Point Labels
+        if (this.settings.PointLabels.TogglePointLabels) {
+            let groupedData: Map<number | string, chartRow[]>;
+            if (settings.PointLabels.Frequency == 'monthly') {
+                groupedData = groupedDataMonthly;
+            } else if (settings.PointLabels.Frequency == 'yearly') {
+                groupedData = groupedDataYearly;
+            }
+
+            let isMax = settings.PointLabels.Value == 'max';
+
+            groupedData.forEach((dataPoints) => {
+                let currentVal = dataPoints[0];
+                for (const dataPoint of dataPoints) {
+                    if (isMax? dataPoint.value >= currentVal.value : dataPoint.value <= currentVal.value) {
+                        currentVal = dataPoint;
+                    }
+                }
+                svg.append("circle")
+                    .attr("class", "graphPoint")
+                    .attr("fill", settings.LineSettings.LineColor)
+                    .attr("cx", x(currentVal.date))
+                    .attr("cy", y(currentVal.value))
+                    .attr("r", 5);
+
+                svg.append('text')
+                    .attr('fill', settings.PointLabels.FontColor)
+                    .attr('font-size', settings.PointLabels.FontSize)
+                    .attr('font-family', settings.PointLabels.FontFamily)
+                    .attr('dominant-baseline', 'middle')
+                    .attr('y', y(currentVal.value) - settings.PointLabels.YOffset)
+                    .attr('x', x(currentVal.date) + settings.PointLabels.XOffset)
+                    .text(Math.round(currentVal.value * 10) / 10);
+            });
+            
+        }
+
         // Growth Indicator
         if (this.settings.GrowthIndicator.ToggleGrowthIndicator) {
             // Get data points selected
             let selector1 = this.settings.GrowthIndicator.Selector1;
             let selector2 = this.settings.GrowthIndicator.Selector2;
 
+            // Determine default position for selector
+            let defaultPoint1: chartRow;
+            let defaultPoint2: chartRow;
+            if (groupedDataMonthly.size >= 2) {
+                const month2 = Array.from(groupedDataMonthly.keys()).pop();
+                const month1 = Array.from(groupedDataMonthly.keys()).slice(-2, -1).pop();
+
+                const month1Data = groupedDataMonthly.get(month1);
+                const month2Data = groupedDataMonthly.get(month2);
+
+                defaultPoint1 = month1Data[0];
+
+                for (const dataPoint of month1Data) {
+                    if (dataPoint.value >= defaultPoint1.value) {
+                        defaultPoint1 = dataPoint;
+                    }
+                }
+
+                defaultPoint2 = month2Data[0];
+
+                for (const dataPoint of month2Data) {
+                    if (dataPoint.value >= defaultPoint2.value) {
+                        defaultPoint2 = dataPoint;
+                    }
+                }
+
+            } else {
+                defaultPoint1 = data[data.length - 2];
+                defaultPoint2 = data[data.length - 1];
+            }
+
             // Check if selectors are valid and find their index
-            let s1Index = (selector1 && (getIndex(selector1, data) != -1)) ? getIndex(selector1, data) : data.length - 2;
-            let s2Index = (selector2 && (getIndex(selector2, data) != -1)) ? getIndex(selector2, data) : data.length - 1;
+            let growthPoint1 = (selector1 && (getIndex(selector1, data) != -1)) ? data[getIndex(selector1, data)] : defaultPoint1;
+            let growthPoint2 = (selector2 && (getIndex(selector2, data) != -1)) ? data[getIndex(selector2, data)] : defaultPoint2;
             
-            let growthPoint1 = data[s1Index];
-            let growthPoint2 = data[s2Index];
+            // let growthPoint1 = data[s1Index];
+            // let growthPoint2 = data[s2Index];
 
             console.log(growthPoint1);
             console.log(growthPoint2);
@@ -375,6 +501,160 @@ export class Visual implements IVisual {
         }
 
 
+        if (settings.SecondaryGrowthIndicator.ToggleGrowthIndicator) {
+            // Get data points selected
+            let selector1 = this.settings.SecondaryGrowthIndicator.Selector1;
+            let selector2 = this.settings.SecondaryGrowthIndicator.Selector2;
+
+            // Determine default position for selector
+            let defaultPoint1: chartRow;
+            let defaultPoint2: chartRow;
+            if (groupedDataMonthly.size > 12) {
+                const month2 = Array.from(groupedDataMonthly.keys()).pop();
+                const month1 = Array.from(groupedDataMonthly.keys()).slice(-13, -12).pop();
+                console.log(groupedDataMonthly);
+                console.log(month2);
+
+                const month1Data = groupedDataMonthly.get(month1);
+                const month2Data = groupedDataMonthly.get(month2);
+
+                defaultPoint1 = month1Data[0];
+
+                for (const dataPoint of month1Data) {
+                    if (dataPoint.value >= defaultPoint1.value) {
+                        defaultPoint1 = dataPoint;
+                    }
+                }
+
+                defaultPoint2 = month2Data[0];
+
+                for (const dataPoint of month2Data) {
+                    if (dataPoint.value >= defaultPoint2.value) {
+                        defaultPoint2 = dataPoint;
+                    }
+                }
+
+            } else if (groupedDataMonthly.size >= 2) {
+                const month2 = Array.from(groupedDataMonthly.keys()).pop();
+                const month1 = Array.from(groupedDataMonthly.keys()).slice(-2, -1).pop();
+
+                const month1Data = groupedDataMonthly.get(month1);
+                const month2Data = groupedDataMonthly.get(month2);
+
+                defaultPoint1 = month1Data[0];
+
+                for (const dataPoint of month1Data) {
+                    if (dataPoint.value >= defaultPoint1.value) {
+                        defaultPoint1 = dataPoint;
+                    }
+                }
+
+                defaultPoint2 = month2Data[0];
+
+                for (const dataPoint of month2Data) {
+                    if (dataPoint.value >= defaultPoint2.value) {
+                        defaultPoint2 = dataPoint;
+                    }
+                }
+
+            } else {
+                defaultPoint1 = data[data.length - 2];
+                defaultPoint2 = data[data.length - 1];
+            }
+
+            // Check if selectors are valid and find their index
+            let growthPoint1 = (selector1 && (getIndex(selector1, data) != -1)) ? data[getIndex(selector1, data)] : defaultPoint1;
+            let growthPoint2 = (selector2 && (getIndex(selector2, data) != -1)) ? data[getIndex(selector2, data)] : defaultPoint2;
+           
+            // Draw circles on points selected
+            let growthCircle1 = svg.append("circle")
+                .attr("class", "graphPoint")
+                .attr("fill", settings.LineSettings.LineColor)
+                .attr("cx", x(growthPoint1.date))
+                .attr("cy", y(growthPoint1.value))
+                .attr("r", 5);
+
+            let growthCircle2 = svg.append("circle")
+                .attr("class", "graphPoint")
+                .attr("fill", settings.LineSettings.LineColor)
+                .attr("cx", x(growthPoint2.date))
+                .attr("cy", y(growthPoint2.value))
+                .attr("r", 5);
+
+            // Create path
+            let heightOffset = settings.SecondaryLabelSettings.LabelOffsetHeight;
+            let top = (settings.SecondaryLabelSettings.Location == 'top');
+            let lineY = top ? y(y.domain()[1]) + heightOffset : y(settings.YAxisSettings.MinValue) - heightOffset;
+            let path = d3.line()([
+                [x(growthPoint1.date), y(growthPoint1.value)],
+                [x(growthPoint1.date),  lineY],
+                [x(growthPoint2.date), lineY],
+                [x(growthPoint2.date), y(growthPoint2.value)]
+            ]);
+
+            // Draw path
+            svg.append('path')
+                .attr('fill', 'none')
+                .attr('stroke', 'black')
+                .attr('stroke-width', '1')
+                .attr('stroke-dasharray', '5,4')
+                .attr('d', path);
+
+            let growthPercent = (growthPoint2.value - growthPoint1.value) / growthPoint1.value * 100;
+            growthPercent = Math.round(growthPercent * 10) / 10;
+            let growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
+
+            let increasing = growthPercent > 0 ? true : false;
+            let averageX = (x(growthPoint1.date) + x(growthPoint2.date)) / 2;
+
+            if (settings.SecondaryLabelSettings.ToggleBgShape) {
+                let textWidth = getTextWidth(growthPercentStr.toString() + '%', settings.SecondaryLabelSettings);
+                let growthEllipse = svg.append('ellipse')
+                    .attr('rx', settings.SecondaryLabelSettings.LabelMinWidth + 10 > textWidth ? settings.SecondaryLabelSettings.LabelMinWidth : textWidth - 10) // resizes label based on text width
+                    .attr('ry', settings.SecondaryLabelSettings.LabelHeight)
+                    .attr('cx', averageX)
+                    .attr('cy', lineY)
+                    .attr('fill', settings.SecondaryLabelSettings.LabelBackgroundColor)
+                    .attr('stroke', settings.SecondaryLabelSettings.BorderColor)
+                    .attr('stroke-width', settings.SecondaryLabelSettings.BorderSize);
+            }
+
+            let growthText = svg.append('text')
+                .attr('width', settings.SecondaryLabelSettings.LabelMinWidth)
+                .attr('height', settings.SecondaryLabelSettings.LabelHeight)
+                .attr('fill', settings.SecondaryLabelSettings.FontColor)
+                .attr('font-size', settings.SecondaryLabelSettings.FontSize)
+                .attr('font-family', settings.SecondaryLabelSettings.FontFamily)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('y', lineY)
+                .attr('x', averageX)
+                .text(growthPercentStr.toString() + '%');
+        }
+
+        // gets displayed width of text
+        function getTextWidth(text: string, settings: any): number {
+            /* 
+            * Param: selector, settings
+            * Returns: width of text based on font size and family
+            */
+            try {
+                let fontFamily = settings.FontFamily;
+                let fontSize = settings.FontSize;
+
+                let font = fontSize + 'px ' + fontFamily;
+
+                let canvas = document.createElement('canvas');
+                let context = canvas.getContext("2d");
+                context.font = font;
+
+                return context.measureText(text).width;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+
         // get index of selector
         function getIndex(selector: string, dataArray: chartRow[]): number {
             /* 
@@ -396,28 +676,24 @@ export class Visual implements IVisual {
 
         // Drag functionality
         let drag = d3.drag()
-            .on("start", dragstarted)
+            //.on("start", dragstarted)
             .on("drag", dragged)
-            .on("end", dragended);
+            //.on("end", dragended);
 
-        function dragstarted(event, d) {
-            //d3.select(this).raise().attr("stroke", "black");
-        }
+        // function dragstarted(event, d) {
+        //     d3.select(this).raise().attr("stroke", "black");
+        // }
             
         function dragged(event, d) {
             d3.select(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
             update();
         }
             
-        function dragended(event, d) {
-            d3.select(this).attr("stroke", null);
-        }
+        // function dragended(event, d) {
+        //     d3.select(this).attr("stroke", null);
+        // }
 
         //let annotations = []
-
-        // Count the number of existing text and line elements
-        const existingTextCount = svg.selectAll('text').size();
-        const existingLineCount = svg.selectAll('line').size();
 
         // Loop through rows to create annotations
         if (this.annotations.length == 0) {
@@ -427,8 +703,6 @@ export class Visual implements IVisual {
                         id: this.annotations.length,
                         x: x(row.date),
                         y: y(row.value),
-                        graphx: x(row.date),
-                        graphy: y(row.value),
                         value: row.value,
                         date: row.date,
                         text: row.annotation
@@ -439,18 +713,15 @@ export class Visual implements IVisual {
 
         console.log(this.annotations);
 
-        // Filter out the text/line elements based on their indices, 
-        //  so that only the annotations are included
-        let newTextElements = svg.selectAll('text')
-            .filter(function(_, i) {
-                return i >= existingTextCount;
-            });
-        let newLineElements = svg.selectAll('line')
-            .filter(function(_, i) {
-                return i >= existingLineCount;
-            });
-
         let annotations = this.annotations;
+
+        function calculateRotationAngle(graphX, graphY, annotationX, annotationY) {
+            const deltaX = graphX - annotationX;
+            const deltaY = graphY - annotationY;
+            const angleRad = Math.atan2(deltaY, deltaX); // Calculate the angle in radians using Math.atan2
+            const angleDeg = (angleRad * 180) / Math.PI; // Convert the angle from radians to degrees
+            return angleDeg;
+        }
         
         // Update annotation after being dragged
         function update() {
@@ -467,8 +738,6 @@ export class Visual implements IVisual {
                 .text(function(d: Annotation) { return d.text; });
                 //.call(drag);
             
-                // rewrite the way drag is called, initialize it one way and update another way
-
             svg.selectAll('.annotationLine')
                 .data(annotations)
                 .join(
@@ -486,7 +755,7 @@ export class Visual implements IVisual {
                             return d.x + d.text.length * (fontsize / 4.5); 
                         })
                         .attr("y2", function(d: Annotation) { 
-                            return (d.y > d.graphy ? d.y - fontsize : d.y + fontsize / 2);
+                            return (d.y > y(d.value) ? d.y - fontsize : d.y + fontsize / 2);
                         })
                 );
             
@@ -495,9 +764,22 @@ export class Visual implements IVisual {
                 svg.selectAll('.annotationLine')
                     .attr('stroke-dasharray', '5,4');
             }
+
+            if (settings.AnnotationSettings.ShowArrow) {
+                svg.selectAll('.annotationArrow')
+                    .data(annotations)
+                    .join(
+                        enter => enter.append('path')
+                            .classed('annotationArrow', true)
+                            .attr('d', d3.symbol().type(d3.symbolTriangle).size(60))
+                            .attr('fill', settings.AnnotationSettings.LineColor)
+                            .attr('transform', (d) => `translate(${x(d.date)}, ${d.y > y(d.value) ? y(d.value) + 2 : y(d.value) - 2}) rotate(${calculateRotationAngle(x(d.date), y(d.value), d.x, (d.y > y(d.value) ? d.y - fontsize : d.y + fontsize / 2))})`),
+                        update => update.attr('transform', (d) => `translate(${x(d.date)}, ${d.y > y(d.value) ? y(d.value) + 2 : y(d.value) - 2}) rotate(${calculateRotationAngle(x(d.date), y(d.value), d.x, (d.y > y(d.value) ? d.y - fontsize : d.y + fontsize / 2))})`)
+                    );
+            }
         }
 
-        if (settings.AnnotationSettings.ToggleAnnotations){
+        if (settings.AnnotationSettings.ToggleAnnotations && commentIndex >= 0){
             // update();
 
             svg.selectAll('.annotationText')
@@ -520,12 +802,12 @@ export class Visual implements IVisual {
                 enter => enter.append('line')
                     .classed('annotationLine', true)
                     .attr("x1", function(d: Annotation) { return x(d.date); })
-                        .attr("y1", function(d: Annotation) { return y(d.value); })
+                    .attr("y1", function(d: Annotation) { return y(d.value); })
                     .attr("x2", function(d: Annotation) { 
                         return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5); 
                     })
                     .attr("y2", function(d: Annotation) { 
-                        return (d.y > d.graphy ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                        return (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
                     })
                     .attr('stroke', settings.AnnotationSettings.LineColor)
                     .attr('stroke-width', settings.AnnotationSettings.LineThickness),
@@ -535,7 +817,7 @@ export class Visual implements IVisual {
                         return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5); 
                     })
                     .attr("y2", function(d: Annotation) { 
-                        return (d.y > d.graphy ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                        return (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
                     })
             );
         
@@ -544,18 +826,20 @@ export class Visual implements IVisual {
                 svg.selectAll('.annotationLine')
                     .attr('stroke-dasharray', '5,4');
             }
+
+            if (settings.AnnotationSettings.ShowArrow){
+                svg.selectAll('.annotationArrow')
+                    .data(this.annotations)
+                    .join(
+                        enter => enter.append('path')
+                            .classed('annotationArrow', true)
+                            .attr('d', d3.symbol().type(d3.symbolTriangle).size(this.settings.AnnotationSettings.ArrowSize))
+                            .attr('fill', this.settings.AnnotationSettings.LineColor)
+                            .attr('transform', (d) => `translate(${x(d.date)}, ${d.y > y(d.value) ? y(d.value) + 2 : y(d.value) - 2}) rotate(${calculateRotationAngle(x(d.date), y(d.value), d.x, (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2))})`),
+                        update => update.attr('transform', (d) => `translate(${x(d.date)}, ${d.y > y(d.value) ? y(d.value) + 2 : y(d.value) - 2}) rotate(${calculateRotationAngle(x(d.date), y(d.value), d.x, (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2))})`)
+                    );
+            }
         }
-
-        // Update the newTextElements and newLineElements variables to include the annotations
-        newTextElements = svg.selectAll('text')
-            .filter(function(_, i) {
-                return i >= existingTextCount;
-            });
-
-        newLineElements = svg.selectAll('line')
-            .filter(function(_, i) {
-                return i >= existingLineCount;
-            });
 
     }
 
