@@ -7,6 +7,7 @@ export declare class VisualSettings extends DataViewObjectsParser {
     TooltipSettings: TooltipSettings;
     PointLabels: PointLabels;
     GrowthIndicator: GrowthIndicator;
+    PrimaryLabelSettings: PrimaryLabelSettings;
     SecondaryGrowthIndicator: SecondaryGrowthIndicator;
     SecondaryLabelSettings: SecondaryLabelSettings;
     AnnotationSettings: AnnotationSettings;
@@ -17,6 +18,8 @@ export declare class LayoutSettings {
     ChartBottomMargin: number;
     ChartLeftMargin: number;
     ChartRightMargin: number;
+    AxisColor: string;
+    ToggleGridLines: boolean;
 }
 export declare class LineSettings {
     LineColor: string;
@@ -50,6 +53,7 @@ export declare class TooltipSettings {
 export declare class PointLabels {
     TogglePointLabels: boolean;
     Frequency: string;
+    nValue: number;
     Value: string;
     FontColor: string;
     FontFamily: string;
@@ -61,32 +65,57 @@ export declare class GrowthIndicator {
     ToggleGrowthIndicator: boolean;
     Selector1: string;
     Selector2: string;
+    LineColor: string;
+    LineOffsetWidth: number;
+    LineSize: number;
+    ShowArrowLine: boolean;
     IncreasingColour: string;
     DecreasingColour: string;
     ShowArrow: boolean;
     ArrowSize: number;
 }
+export declare class PrimaryLabelSettings {
+    ShowSign: boolean;
+    FontColor: string;
+    FontFamily: string;
+    FontSize: number;
+    LabelOffsetWidth: number;
+    ToggleBgShape: boolean;
+    LabelBackgroundColor: string;
+    BorderColor: string;
+    BorderSize: number;
+    LabelHeight: number;
+    LabelMinWidth: number;
+}
 export declare class SecondaryGrowthIndicator {
     ToggleGrowthIndicator: boolean;
     Selector1: string;
     Selector2: string;
+    LineColor: string;
+    LineOffsetHeight: number;
+    LineSize: number;
+    DisplayArrow: string;
+    ArrowSize: number;
+    ArrowOffset: number;
 }
 export declare class SecondaryLabelSettings {
     Location: string;
-    LabelBackgroundColor: string;
+    ShowSign: boolean;
     FontColor: string;
     FontFamily: string;
     FontSize: number;
+    LabelOffsetHeight: number;
+    ToggleBgShape: boolean;
+    LabelBackgroundColor: string;
     BorderColor: string;
     BorderSize: number;
-    LabelOffsetHeight: number;
     LabelHeight: number;
     LabelMinWidth: number;
-    ShowSign: boolean;
-    ToggleBgShape: boolean;
 }
 export declare class AnnotationSettings {
     ToggleAnnotations: boolean;
+    XOffset: number;
+    YOffset: number;
     FontFamily: string;
     FontColor: string;
     FontSize: number;
@@ -95,4 +124,5 @@ export declare class AnnotationSettings {
     LineStyle: string;
     ShowArrow: boolean;
     ArrowSize: number;
+    SaveLocations: boolean;
 }

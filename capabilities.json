@@ -82,6 +82,22 @@
                     "type": {
                         "numeric": true
                     }
+                },
+                "AxisColor": {
+                    "displayName": "Axis Colour",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "ToggleGridLines": {
+                    "displayName": "Show Grid Lines",
+                    "type": {
+                        "bool": true
+                    }
                 }
             }
         },
@@ -304,8 +320,14 @@
                         ]
                     }
                 },
+                "nValue": {
+                    "displayName": "'n' Value",
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "Value": {
-                    "displayName": "Point Value",
+                    "displayName": "n-th Max/Min",
                     "type": {
                         "enumeration": [
                             {
@@ -358,7 +380,7 @@
             }
         },
         "GrowthIndicator": {
-            "displayName": "Growth Indicator",
+            "displayName": "Primary Growth Indicator",
             "properties": {
                 "ToggleGrowthIndicator": {
                     "displayName": "Show Growth Indicator",
@@ -380,8 +402,36 @@
                         "text": true
                     }
                 },
+                "LineColor": {
+                    "displayName": "Line Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "LineOffsetWidth": {
+                    "displayName": "Line Offset Width",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "LineSize": {
+                    "displayName": "Line Thickness",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "ShowArrowLine": {
+                    "displayName": "Toggle Arrow Line",
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "IncreasingColour": {
-                    "displayName": "Increasing Line Color",
+                    "displayName": "Increasing Arrow Color",
                     "type": {
                         "fill": {
                             "solid": {
@@ -391,7 +441,7 @@
                     }
                 },
                 "DecreasingColour": {
-                    "displayName": "Decreasing Line Color",
+                    "displayName": "Decreasing Arrow Color",
                     "type": {
                         "fill": {
                             "solid": {
@@ -401,7 +451,7 @@
                     }
                 },
                 "ShowArrow": {
-                    "displayName": "Show Arrow",
+                    "displayName": "Show Arrow Head",
                     "type": {
                         "bool": true
                     }
@@ -414,49 +464,9 @@
                 }
             }
         },
-        "SecondaryGrowthIndicator": {
-            "displayName": "Secondary Growth Indicator",
+        "PrimaryLabelSettings": {
+            "displayName": "Primary Growth Labels",
             "properties": {
-                "ToggleGrowthIndicator": {
-                    "displayName": "Show Secondary Growth Indicator",
-                    "type": {
-                        "bool": true
-                    }
-                },
-                "Selector1": {
-                    "displayName": "First Selection",
-                    "description": "MM-DD-YYYY",
-                    "type": {
-                        "text": true
-                    }
-                },
-                "Selector2": {
-                    "displayName": "Second Selection",
-                    "description": "MM-DD-YYYY",
-                    "type": {
-                        "text": true
-                    }
-                }
-            }
-        },
-        "SecondaryLabelSettings": {
-            "displayName": "Secondary Growth Labels",
-            "properties": {
-                "Location": {
-                    "displayName": "Location",
-                    "type": {
-                        "enumeration": [
-                            {
-                                "value": "top",
-                                "displayName": "Top"
-                            },
-                            {
-                                "value": "bottom",
-                                "displayName": "Bottom"
-                            }
-                        ]
-                    }
-                },
                 "LabelBackgroundColor": {
                     "displayName": "Label Background Color",
                     "type": {
@@ -465,12 +475,6 @@
                                 "color": true
                             }
                         }
-                    }
-                },
-                "LabelOffsetHeight": {
-                    "displayName": "Label Offset Height",
-                    "type": {
-                        "numeric": true
                     }
                 },
                 "BorderColor": {
@@ -519,6 +523,194 @@
                         "bool": true
                     }
                 },
+                "LabelOffsetWidth": {
+                    "displayName": "Label Offset Width",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "ShowSign": {
+                    "displayName": "Show +/- Sign",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "LabelHeight": {
+                    "displayName": "Label Height",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "LabelMinWidth": {
+                    "displayName": "Min Label Width",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
+        "SecondaryGrowthIndicator": {
+            "displayName": "Secondary Growth Indicator",
+            "properties": {
+                "ToggleGrowthIndicator": {
+                    "displayName": "Show Secondary Growth Indicator",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "Selector1": {
+                    "displayName": "First Selection",
+                    "description": "MM-DD-YYYY",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "Selector2": {
+                    "displayName": "Second Selection",
+                    "description": "MM-DD-YYYY",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "LineColor": {
+                    "displayName": "Line Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "LineOffsetHeight": {
+                    "displayName": "Line Offset Height",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "LineSize": {
+                    "displayName": "Line Thickness",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "DisplayArrow": {
+                    "displayName": "Display Arrows",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "value": "none",
+                                "displayName": "Neither"
+                            },
+                            {
+                                "value": "both",
+                                "displayName": "Both"
+                            },
+                            {
+                                "value": "right",
+                                "displayName": "Right arrow only"
+                            },
+                            {
+                                "value": "left",
+                                "displayName": "Left arrow only"
+                            }
+                        ]
+                    }
+                },
+                "ArrowSize": {
+                    "displayName": "Arrow Size",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "ArrowOffset": {
+                    "displayName": "Arrow Offset",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
+        "SecondaryLabelSettings": {
+            "displayName": "Secondary Growth Labels",
+            "properties": {
+                "Location": {
+                    "displayName": "Location",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "value": "top",
+                                "displayName": "Top"
+                            },
+                            {
+                                "value": "bottom",
+                                "displayName": "Bottom"
+                            }
+                        ]
+                    }
+                },
+                "LabelBackgroundColor": {
+                    "displayName": "Label Background Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "BorderColor": {
+                    "displayName": "Border Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "FontColor": {
+                    "displayName": "Font Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "FontFamily": {
+                    "displayName": "Font Family",
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "BorderSize": {
+                    "displayName": "Border Thickness",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "FontSize": {
+                    "displayName": "Font Size",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "ToggleBgShape": {
+                    "displayName": "Toggle Background Shape",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "LabelOffsetHeight": {
+                    "displayName": "Label Offset Height",
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "ShowSign": {
                     "displayName": "Show +/- Sign",
                     "type": {
@@ -546,6 +738,18 @@
                     "displayName": "Show Annotations",
                     "type": {
                         "bool": true
+                    }
+                },
+                "XOffset": {
+                    "displayName": "Default X Offset",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "YOffset": {
+                    "displayName": "Default Y Offset",
+                    "type": {
+                        "numeric": true
                     }
                 },
                 "FontFamily": {
@@ -613,6 +817,12 @@
                     "displayName": "Arrow Size",
                     "type": {
                         "numeric": true
+                    }
+                },
+                "SaveLocations": {
+                    "displayName": "Save Annotation Locations",
+                    "type": {
+                        "bool": true
                     }
                 }
             }

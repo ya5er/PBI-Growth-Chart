@@ -51,6 +51,9 @@ export class Visual implements IVisual {
         console.log('Visual update', options);
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
         let settings = this.settings;
+        if (!settings.AnnotationSettings.SaveLocations) {
+            this.annotations = [];
+        }
 
         console.log(this.settings);
         
@@ -174,6 +177,7 @@ export class Visual implements IVisual {
         const groupedDataMonthly = groupDataByMonth(data);
         const groupedDataYearly = groupDataByYear(data);
 
+
         // Set the dimensions and margins of the graph
         let ls = settings.LayoutSettings;
         var margin = {top: ls.ChartTopMargin, right: ls.ChartRightMargin, bottom: ls.ChartBottomMargin, left: ls.ChartLeftMargin},
@@ -214,6 +218,10 @@ export class Visual implements IVisual {
                 })
                 .ticks(this.settings.XAxisSettings.TickCount))
             .call(g => {
+                g.selectAll('.x-axis-g path') // Select the y-axis line
+                    .attr('stroke', settings.LayoutSettings.AxisColor); 
+                g.selectAll('.x-axis-g line') // Select tick mark lines
+                    .attr('stroke', settings.LayoutSettings.AxisColor);
                 // font settings
                 g.selectAll('.x-axis-g text')
                     .style('fill', this.settings.XAxisSettings.FontColor)
@@ -227,28 +235,42 @@ export class Visual implements IVisual {
 
         // Set Y axis values
         let minvalue = this.settings.YAxisSettings.MinValue;
-        let maxvalue = this.settings.YAxisSettings.MaxValue <= minvalue ? d3.max(data, function(d) { return +d.value; }) : this.settings.YAxisSettings.MaxValue;
-        let range = maxvalue - minvalue;
+        let maxvalue = d3.max(data, function(d) { return +d.value; });
+        let graphMaxvalue = this.settings.YAxisSettings.MaxValue <= maxvalue ? maxvalue: this.settings.YAxisSettings.MaxValue;
 
         var y = d3.scaleLinear()
-            .domain([minvalue, maxvalue + range / 4])
+            .domain([minvalue, graphMaxvalue])
             .range([ height, 0 ]);
         
         // Add Y axis
         svg.append('g')
             .classed('y-axis-g', true)
             .call(d3.axisLeft(y)
-                .tickFormat(data => {
-                    // formats y-axis labels with appropriate units
-                    return nFormatter(parseInt(data.toString()), this.settings.YAxisSettings.DisplayDigits, this.settings.YAxisSettings.DisplayUnits);
-                })
-                .ticks(this.settings.YAxisSettings.TickCount))
-            .call(_ => { 
+                    .tickFormat(data => {
+                        // formats y-axis labels with appropriate units
+                        return nFormatter(parseInt(data.toString()), this.settings.YAxisSettings.DisplayDigits, this.settings.YAxisSettings.DisplayUnits);
+                    })
+                .ticks(this.settings.YAxisSettings.TickCount)
+                .tickSize(settings.LayoutSettings.ToggleGridLines ? -width : 6))
+            .call(_ => {
+                if (settings.LayoutSettings.ToggleGridLines) {
+                    d3.selectAll('line')
+                        .attr('stroke-dasharray', '1,3')
+                        .attr('stroke', settings.LayoutSettings.AxisColor)
+                        .attr('stroke-width', +settings.LayoutSettings.ToggleGridLines)
+                        .style('fill', settings.LayoutSettings.AxisColor);
+                }
                 d3.selectAll('.y-axis-g text')
                     .style('fill', this.settings.YAxisSettings.FontColor)
                     .style('font-family', this.settings.YAxisSettings.FontFamily)
                     .style('font-size', this.settings.YAxisSettings.FontSize); 
-                });
+                })
+            .call(g => {
+                g.selectAll('.y-axis-g path') // Select the y-axis line
+                    .attr('stroke', settings.LayoutSettings.AxisColor); 
+                g.selectAll('.y-axis-g line') // Select tick mark lines
+                    .attr('stroke', settings.LayoutSettings.AxisColor);
+            });
 
         
         function nFormatter(num: number, digits: number, displayUnits: string): string {
@@ -361,13 +383,36 @@ export class Visual implements IVisual {
 
             let isMax = settings.PointLabels.Value == 'max';
 
+            // const sortedDataPoints = groupedDataYearly.get(2022).slice().sort((a, b) => b.value - a.value);
+            // console.log(sortedDataPoints);
+            // Take the nth point from this sorted list after doing it for each year/month.
+
             groupedData.forEach((dataPoints) => {
-                let currentVal = dataPoints[0];
-                for (const dataPoint of dataPoints) {
-                    if (isMax? dataPoint.value >= currentVal.value : dataPoint.value <= currentVal.value) {
-                        currentVal = dataPoint;
-                    }
+                let currentVal;
+                let n = settings.PointLabels.nValue;
+
+                // for (const dataPoint of dataPoints) {
+                //     if (isMax? dataPoint.value >= currentVal.value : dataPoint.value <= currentVal.value) {
+                //         currentVal = dataPoint;
+                //     }
+                // }
+
+                // Sort data to get nth value
+                const sortedData = dataPoints.slice().sort((a, b) => b.value - a.value);
+                console.log(sortedData);
+
+                if (n > sortedData.length) {
+                    n = sortedData.length;
+                } else if (n < 1) {
+                    n = 1;
                 }
+
+                if (isMax) {
+                    currentVal = sortedData[n - 1];
+                } else {
+                    currentVal = sortedData[sortedData.length - n];
+                }
+
                 svg.append("circle")
                     .attr("class", "graphPoint")
                     .attr("fill", settings.LineSettings.LineColor)
@@ -450,7 +495,7 @@ export class Visual implements IVisual {
                 .attr("r", 5);
 
             // Create path
-            let widthOffset = 20;
+            let widthOffset = settings.GrowthIndicator.LineOffsetWidth;
             let path = d3.line()([
                 [x(growthPoint1.date), y(growthPoint1.value)],
                 [width + widthOffset, y(growthPoint1.value)],
@@ -461,46 +506,65 @@ export class Visual implements IVisual {
             // Draw path
             svg.append('path')
                 .attr('fill', 'none')
-                .attr('stroke', 'black')
-                .attr('stroke-width', '1')
+                .attr('stroke', settings.GrowthIndicator.LineColor)
+                .attr('stroke-width', settings.GrowthIndicator.LineSize)
                 .attr('stroke-dasharray', '5,4')
                 .attr('d', path);
 
             let growthPercent = (growthPoint2.value - growthPoint1.value) / growthPoint1.value * 100;
             growthPercent = Math.round(growthPercent * 10) / 10;
-            let growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
-
+            let growthPercentStr;
+            if (!settings.PrimaryLabelSettings.ShowSign) {
+                growthPercentStr = Math.abs(growthPercent);
+            } else {
+                growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
+            }
             let increasing = growthPercent > 0 ? true : false;
             let minY = (y(growthPoint1.value) >= y(growthPoint2.value)) ? y(growthPoint2.value) : y(growthPoint1.value);
             let maxY = (y(growthPoint1.value) >= y(growthPoint2.value)) ? y(growthPoint1.value) : y(growthPoint2.value);
 
-            // Arrowhead
-            if (this.settings.GrowthIndicator.ShowArrow) {
-                svg.append('path')
-                    .attr('d', d3.symbol().type(d3.symbolTriangle).size(this.settings.GrowthIndicator.ArrowSize))
-                    .attr('fill', growthPercent > 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
-                    .attr('transform', `translate(${width + widthOffset}, ${increasing ? minY : maxY}) rotate(${increasing ? 0 : 60})`);
+            if (settings.GrowthIndicator.ShowArrowLine) {
+                // Arrowhead
+                if (this.settings.GrowthIndicator.ShowArrow) {
+                    svg.append('path')
+                        .attr('d', d3.symbol().type(d3.symbolTriangle).size(this.settings.GrowthIndicator.ArrowSize))
+                        .attr('fill', growthPercent > 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
+                        .attr('transform', `translate(${width + widthOffset}, ${increasing ? minY : maxY}) rotate(${increasing ? 0 : 60})`);
+                }
+
+                let arrowLine = svg.append('line')
+                    .attr('x1', width + widthOffset)
+                    .attr('y1', y(growthPoint1.value))
+                    .attr('x2', width + widthOffset)
+                    .attr('y2', y(growthPoint2.value))
+                    .attr('stroke', growthPercent >= 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
+                    .attr('stroke-width', settings.GrowthIndicator.LineSize + 1);
+            }
+            if (settings.PrimaryLabelSettings.ToggleBgShape) {
+                let textWidth = getTextWidth(growthPercentStr.toString() + '%', settings.PrimaryLabelSettings);
+                let growthEllipse = svg.append('ellipse')
+                    .attr('rx', settings.PrimaryLabelSettings.LabelMinWidth + 10 > textWidth ? settings.PrimaryLabelSettings.LabelMinWidth : textWidth - 10) // resizes label based on text width
+                    .attr('ry', settings.PrimaryLabelSettings.LabelHeight)
+                    .attr('cx', width + widthOffset + settings.PrimaryLabelSettings.LabelOffsetWidth)
+                    .attr('cy', (y(growthPoint1.value) + y(growthPoint2.value)) / 2)
+                    .attr('fill', settings.PrimaryLabelSettings.LabelBackgroundColor)
+                    .attr('stroke', settings.PrimaryLabelSettings.BorderColor)
+                    .attr('stroke-width', settings.PrimaryLabelSettings.BorderSize);
             }
 
-            let arrowLine = svg.append('line')
-                .attr('x1', width + widthOffset)
-                .attr('y1', y(growthPoint1.value))
-                .attr('x2', width + widthOffset)
-                .attr('y2', y(growthPoint2.value))
-                .attr('stroke', growthPercent >= 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
-                .attr('stroke-width', 2);
-
             let growthText = svg.append('text')
-                .attr('fill', 'black')
-                .attr('font-size', 12)
+                .attr('fill', settings.PrimaryLabelSettings.FontColor)
+                .attr('font-size', settings.PrimaryLabelSettings.FontSize)
+                .attr('font-family', settings.PrimaryLabelSettings.FontFamily)
+                .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
                 .attr('y', (y(growthPoint1.value) + y(growthPoint2.value)) / 2)
-                .attr('x', width + widthOffset + 5)
+                .attr('x', width + widthOffset + settings.PrimaryLabelSettings.LabelOffsetWidth)
                 .text(growthPercentStr + '%');
 
         }
 
-
+        // Secondary Growth Indicator
         if (settings.SecondaryGrowthIndicator.ToggleGrowthIndicator) {
             // Get data points selected
             let selector1 = this.settings.SecondaryGrowthIndicator.Selector1;
@@ -582,7 +646,7 @@ export class Visual implements IVisual {
                 .attr("r", 5);
 
             // Create path
-            let heightOffset = settings.SecondaryLabelSettings.LabelOffsetHeight;
+            let heightOffset = settings.SecondaryGrowthIndicator.LineOffsetHeight;
             let top = (settings.SecondaryLabelSettings.Location == 'top');
             let lineY = top ? y(y.domain()[1]) + heightOffset : y(settings.YAxisSettings.MinValue) - heightOffset;
             let path = d3.line()([
@@ -595,14 +659,19 @@ export class Visual implements IVisual {
             // Draw path
             svg.append('path')
                 .attr('fill', 'none')
-                .attr('stroke', 'black')
-                .attr('stroke-width', '1')
+                .attr('stroke', settings.SecondaryGrowthIndicator.LineColor)
+                .attr('stroke-width', settings.SecondaryGrowthIndicator.LineSize)
                 .attr('stroke-dasharray', '5,4')
                 .attr('d', path);
 
             let growthPercent = (growthPoint2.value - growthPoint1.value) / growthPoint1.value * 100;
             growthPercent = Math.round(growthPercent * 10) / 10;
-            let growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
+            let growthPercentStr;
+            if (!settings.SecondaryLabelSettings.ShowSign) {
+                growthPercentStr = Math.abs(growthPercent);
+            } else {
+                growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
+            }
 
             let increasing = growthPercent > 0 ? true : false;
             let averageX = (x(growthPoint1.date) + x(growthPoint2.date)) / 2;
@@ -613,7 +682,7 @@ export class Visual implements IVisual {
                     .attr('rx', settings.SecondaryLabelSettings.LabelMinWidth + 10 > textWidth ? settings.SecondaryLabelSettings.LabelMinWidth : textWidth - 10) // resizes label based on text width
                     .attr('ry', settings.SecondaryLabelSettings.LabelHeight)
                     .attr('cx', averageX)
-                    .attr('cy', lineY)
+                    .attr('cy', lineY - settings.SecondaryLabelSettings.LabelOffsetHeight)
                     .attr('fill', settings.SecondaryLabelSettings.LabelBackgroundColor)
                     .attr('stroke', settings.SecondaryLabelSettings.BorderColor)
                     .attr('stroke-width', settings.SecondaryLabelSettings.BorderSize);
@@ -627,9 +696,45 @@ export class Visual implements IVisual {
                 .attr('font-family', settings.SecondaryLabelSettings.FontFamily)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('y', lineY)
+                .attr('y', lineY - settings.SecondaryLabelSettings.LabelOffsetHeight)
                 .attr('x', averageX)
                 .text(growthPercentStr.toString() + '%');
+
+            let rotation = settings.SecondaryLabelSettings.Location == 'top' ? 60 : 0;
+            let arrowOffset = settings.SecondaryLabelSettings.Location == 'top' ? -settings.SecondaryGrowthIndicator.ArrowOffset : settings.SecondaryGrowthIndicator.ArrowOffset
+            switch (settings.SecondaryGrowthIndicator.DisplayArrow) {
+                case 'left':
+                    // draw first arrow
+                    drawTriangle(x(growthPoint1.date), y(growthPoint1.value) + arrowOffset, settings.SecondaryGrowthIndicator, rotation);
+                    break;
+
+                case 'right':
+                    // draw second arrow
+                    drawTriangle(x(growthPoint2.date), y(growthPoint2.value) + arrowOffset, settings.SecondaryGrowthIndicator, rotation);
+                    break;
+
+                case 'both':
+                    // draw first arrow
+                    drawTriangle(x(growthPoint1.date), y(growthPoint1.value) + arrowOffset, settings.SecondaryGrowthIndicator, rotation);
+                    // draw second arrow
+                    drawTriangle(x(growthPoint2.date), y(growthPoint2.value) + arrowOffset, settings.SecondaryGrowthIndicator, rotation);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        // draws triangles/arrows on the svg
+        function drawTriangle(x: number, y: number, settings: any, rotation: number) {
+            /* 
+            * Param: x coord, y coord, settings, rotation 
+            * Returns: none
+            */
+            svg.append('path')
+                .attr('d', d3.symbol().type(d3.symbolTriangle).size(settings.ArrowSize))
+                .attr('fill', settings.LineColor)
+                .attr('transform', `translate(${x}, ${y}) rotate(${rotation})`);
         }
 
         // gets displayed width of text
@@ -726,12 +831,14 @@ export class Visual implements IVisual {
         // Update annotation after being dragged
         function update() {
             let fontsize = settings.AnnotationSettings.FontSize;
+            let yOffset = -settings.AnnotationSettings.YOffset;
+            let xOffset = settings.AnnotationSettings.XOffset;
 
             svg.selectAll('.annotationText')
                 .data(annotations)
                 .join('text')
-                .attr('x', function(d: Annotation) { return d.x; })
-                .attr('y', function(d: Annotation) { return d.y; })
+                .attr('x', function(d: Annotation) { return d.x + xOffset; })
+                .attr('y', function(d: Annotation) { return d.y + yOffset; })
                 .attr('font-size', fontsize)
                 .style('fill', settings.AnnotationSettings.FontColor)
                 .style('font-family', settings.AnnotationSettings.FontFamily)
@@ -752,10 +859,10 @@ export class Visual implements IVisual {
                     update => update.attr("x1", function(d: Annotation) { return x(d.date); })
                         .attr("y1", function(d: Annotation) { return y(d.value); })
                         .attr("x2", function(d: Annotation) { 
-                            return d.x + d.text.length * (fontsize / 4.5); 
+                            return d.x + d.text.length * (fontsize / 4.5) + xOffset; 
                         })
                         .attr("y2", function(d: Annotation) { 
-                            return (d.y > y(d.value) ? d.y - fontsize : d.y + fontsize / 2);
+                            return (d.y > (y(d.value) - yOffset) ? d.y - fontsize + yOffset : d.y + yOffset + fontsize / 2);
                         })
                 );
             
@@ -780,14 +887,16 @@ export class Visual implements IVisual {
         }
 
         if (settings.AnnotationSettings.ToggleAnnotations && commentIndex >= 0){
+            let yOffset = -settings.AnnotationSettings.YOffset;
+            let xOffset = settings.AnnotationSettings.XOffset;
             // update();
 
             svg.selectAll('.annotationText')
                 .data(this.annotations)
                 .join('text')
                 .classed('annotationText', true)
-                .attr('x', function(d) { return d.x; })
-                .attr('y', function(d) { return d.y; })
+                .attr('x', function(d) { return d.x + xOffset; })
+                .attr('y', function(d) { return d.y + yOffset; })
                 .attr('font-size', settings.AnnotationSettings.FontSize)
                 .style('fill', settings.AnnotationSettings.FontColor)
                 .style('font-family', settings.AnnotationSettings.FontFamily)
@@ -804,10 +913,10 @@ export class Visual implements IVisual {
                     .attr("x1", function(d: Annotation) { return x(d.date); })
                     .attr("y1", function(d: Annotation) { return y(d.value); })
                     .attr("x2", function(d: Annotation) { 
-                        return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5); 
+                        return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5) + xOffset; 
                     })
                     .attr("y2", function(d: Annotation) { 
-                        return (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                        return (d.y > (y(d.value) - yOffset) ? d.y - settings.AnnotationSettings.FontSize + yOffset : d.y + yOffset + settings.AnnotationSettings.FontSize / 2);
                     })
                     .attr('stroke', settings.AnnotationSettings.LineColor)
                     .attr('stroke-width', settings.AnnotationSettings.LineThickness),
@@ -817,7 +926,7 @@ export class Visual implements IVisual {
                         return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5); 
                     })
                     .attr("y2", function(d: Annotation) { 
-                        return (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                        return (d.y > (y(d.value) - yOffset) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
                     })
             );
         

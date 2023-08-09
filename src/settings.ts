@@ -36,6 +36,7 @@ export class VisualSettings extends DataViewObjectsParser {
     public TooltipSettings: TooltipSettings = new TooltipSettings();
     public PointLabels: PointLabels = new PointLabels();
     public GrowthIndicator: GrowthIndicator = new GrowthIndicator();
+    public PrimaryLabelSettings: PrimaryLabelSettings = new PrimaryLabelSettings();
     public SecondaryGrowthIndicator: SecondaryGrowthIndicator = new SecondaryGrowthIndicator();
     public SecondaryLabelSettings: SecondaryLabelSettings = new SecondaryLabelSettings();
     public AnnotationSettings: AnnotationSettings = new AnnotationSettings();
@@ -47,6 +48,9 @@ export class LayoutSettings {
     public ChartBottomMargin: number = 30;
     public ChartLeftMargin: number = 60;
     public ChartRightMargin: number = 70;
+
+    public AxisColor: string = '#CCCCCC';
+    public ToggleGridLines: boolean = false;
 
 }
 
@@ -97,6 +101,7 @@ export class PointLabels {
     public TogglePointLabels: boolean = false;
 
     public Frequency: string = 'monthly';
+    public nValue: number = 1;
     public Value: string = 'max';
 
     public FontColor: string = '#000000';
@@ -113,12 +118,37 @@ export class GrowthIndicator {
     public Selector1: string = '';
     public Selector2: string = '';
 
+    public LineColor: string = '#808080';
+    public LineOffsetWidth: number = 20;
+    public LineSize: number = 1;
+
+    public ShowArrowLine: boolean = true;
+    
     public IncreasingColour: string = '#32CD32';
     public DecreasingColour: string = '#FF0000';
 
     public ShowArrow: boolean = true;
-    public ArrowSize: number = 50;
+    public ArrowSize: number = 30;
 
+}
+
+export class PrimaryLabelSettings {
+    public ShowSign: boolean = true;
+
+    public FontColor: string = '#000000';
+    public FontFamily: string = 'Calibri';
+    public FontSize: number = 12;
+
+    public LabelOffsetWidth: number = 25;
+
+    public ToggleBgShape: boolean = false;
+    public LabelBackgroundColor: string = '#ffffff';
+
+    public BorderColor: string = '#808080';
+    public BorderSize: number = 1;
+
+    public LabelHeight: number = 10;
+    public LabelMinWidth: number = 20;
 }
 
 export class SecondaryGrowthIndicator {
@@ -126,29 +156,41 @@ export class SecondaryGrowthIndicator {
 
     public Selector1: string = '';
     public Selector2: string = '';
+
+    public LineColor: string = '#808080';
+    public LineOffsetHeight: number = 25;
+    public LineSize: number = 1;
+
+    public DisplayArrow: string = 'both';
+    public ArrowSize: number = 40;
+    public ArrowOffset: number = 10;
 }
 
 export class SecondaryLabelSettings {
     public Location: string = 'top';
-    public LabelBackgroundColor: string = '#ffffff';
+    public ShowSign: boolean = true;
 
     public FontColor: string = '#000000';
     public FontFamily: string = 'Calibri';
-    public FontSize: number = 11;
+    public FontSize: number = 12;
+
+    public LabelOffsetHeight: number = 0;
+
+    public ToggleBgShape: boolean = true;
+    public LabelBackgroundColor: string = '#ffffff';
 
     public BorderColor: string = '#808080';
     public BorderSize: number = 1;
 
-    public LabelOffsetHeight: number = 20;
     public LabelHeight: number = 10;
     public LabelMinWidth: number = 20;
-
-    public ShowSign: boolean = true;
-    public ToggleBgShape: boolean = true;
 }
 
 export class AnnotationSettings {
     public ToggleAnnotations: boolean = true;
+
+    public XOffset: number = 20;
+    public YOffset: number = 30;
 
     public FontFamily: string = 'Calibri';
     public FontColor: string = '#666666';
@@ -160,4 +202,6 @@ export class AnnotationSettings {
 
     public ShowArrow: boolean = false;
     public ArrowSize: number = 40;
+
+    public SaveLocations: boolean = false;
 }

@@ -9,7 +9,7 @@ var annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG;
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Jx: () => (/* binding */ VisualSettings)
 /* harmony export */ });
-/* unused harmony exports LayoutSettings, LineSettings, XAxisSettings, YAxisSettings, TooltipSettings, PointLabels, GrowthIndicator, SecondaryGrowthIndicator, SecondaryLabelSettings, AnnotationSettings */
+/* unused harmony exports LayoutSettings, LineSettings, XAxisSettings, YAxisSettings, TooltipSettings, PointLabels, GrowthIndicator, PrimaryLabelSettings, SecondaryGrowthIndicator, SecondaryLabelSettings, AnnotationSettings */
 /* harmony import */ var powerbi_visuals_utils_dataviewutils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(24554);
 /*
  *  Power BI Visualizations
@@ -48,6 +48,7 @@ class VisualSettings extends DataViewObjectsParser {
         this.TooltipSettings = new TooltipSettings();
         this.PointLabels = new PointLabels();
         this.GrowthIndicator = new GrowthIndicator();
+        this.PrimaryLabelSettings = new PrimaryLabelSettings();
         this.SecondaryGrowthIndicator = new SecondaryGrowthIndicator();
         this.SecondaryLabelSettings = new SecondaryLabelSettings();
         this.AnnotationSettings = new AnnotationSettings();
@@ -60,6 +61,8 @@ class LayoutSettings {
         this.ChartBottomMargin = 30;
         this.ChartLeftMargin = 60;
         this.ChartRightMargin = 70;
+        this.AxisColor = '#CCCCCC';
+        this.ToggleGridLines = false;
     }
 }
 class LineSettings {
@@ -103,6 +106,7 @@ class PointLabels {
     constructor() {
         this.TogglePointLabels = false;
         this.Frequency = 'monthly';
+        this.nValue = 1;
         this.Value = 'max';
         this.FontColor = '#000000';
         this.FontFamily = 'Calibri';
@@ -116,10 +120,29 @@ class GrowthIndicator {
         this.ToggleGrowthIndicator = true;
         this.Selector1 = '';
         this.Selector2 = '';
+        this.LineColor = '#808080';
+        this.LineOffsetWidth = 20;
+        this.LineSize = 1;
+        this.ShowArrowLine = true;
         this.IncreasingColour = '#32CD32';
         this.DecreasingColour = '#FF0000';
         this.ShowArrow = true;
-        this.ArrowSize = 50;
+        this.ArrowSize = 30;
+    }
+}
+class PrimaryLabelSettings {
+    constructor() {
+        this.ShowSign = true;
+        this.FontColor = '#000000';
+        this.FontFamily = 'Calibri';
+        this.FontSize = 12;
+        this.LabelOffsetWidth = 25;
+        this.ToggleBgShape = false;
+        this.LabelBackgroundColor = '#ffffff';
+        this.BorderColor = '#808080';
+        this.BorderSize = 1;
+        this.LabelHeight = 10;
+        this.LabelMinWidth = 20;
     }
 }
 class SecondaryGrowthIndicator {
@@ -127,27 +150,35 @@ class SecondaryGrowthIndicator {
         this.ToggleGrowthIndicator = true;
         this.Selector1 = '';
         this.Selector2 = '';
+        this.LineColor = '#808080';
+        this.LineOffsetHeight = 25;
+        this.LineSize = 1;
+        this.DisplayArrow = 'both';
+        this.ArrowSize = 40;
+        this.ArrowOffset = 10;
     }
 }
 class SecondaryLabelSettings {
     constructor() {
         this.Location = 'top';
-        this.LabelBackgroundColor = '#ffffff';
+        this.ShowSign = true;
         this.FontColor = '#000000';
         this.FontFamily = 'Calibri';
-        this.FontSize = 11;
+        this.FontSize = 12;
+        this.LabelOffsetHeight = 0;
+        this.ToggleBgShape = true;
+        this.LabelBackgroundColor = '#ffffff';
         this.BorderColor = '#808080';
         this.BorderSize = 1;
-        this.LabelOffsetHeight = 20;
         this.LabelHeight = 10;
         this.LabelMinWidth = 20;
-        this.ShowSign = true;
-        this.ToggleBgShape = true;
     }
 }
 class AnnotationSettings {
     constructor() {
         this.ToggleAnnotations = true;
+        this.XOffset = 20;
+        this.YOffset = 30;
         this.FontFamily = 'Calibri';
         this.FontColor = '#666666';
         this.FontSize = 10;
@@ -156,6 +187,7 @@ class AnnotationSettings {
         this.LineStyle = 'solid';
         this.ShowArrow = false;
         this.ArrowSize = 40;
+        this.SaveLocations = false;
     }
 }
 
@@ -193,6 +225,9 @@ class Visual {
         console.log('Visual update', options);
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
         let settings = this.settings;
+        if (!settings.AnnotationSettings.SaveLocations) {
+            this.annotations = [];
+        }
         console.log(this.settings);
         // Clear down existing plot
         this.container.selectAll('*').remove();
@@ -323,6 +358,10 @@ class Visual {
         })
             .ticks(this.settings.XAxisSettings.TickCount))
             .call(g => {
+            g.selectAll('.x-axis-g path') // Select the y-axis line
+                .attr('stroke', settings.LayoutSettings.AxisColor);
+            g.selectAll('.x-axis-g line') // Select tick mark lines
+                .attr('stroke', settings.LayoutSettings.AxisColor);
             // font settings
             g.selectAll('.x-axis-g text')
                 .style('fill', this.settings.XAxisSettings.FontColor)
@@ -334,10 +373,10 @@ class Visual {
         });
         // Set Y axis values
         let minvalue = this.settings.YAxisSettings.MinValue;
-        let maxvalue = this.settings.YAxisSettings.MaxValue <= minvalue ? d3__WEBPACK_IMPORTED_MODULE_2__/* .max */ .Fp7(data, function (d) { return +d.value; }) : this.settings.YAxisSettings.MaxValue;
-        let range = maxvalue - minvalue;
+        let maxvalue = d3__WEBPACK_IMPORTED_MODULE_2__/* .max */ .Fp7(data, function (d) { return +d.value; });
+        let graphMaxvalue = this.settings.YAxisSettings.MaxValue <= maxvalue ? maxvalue : this.settings.YAxisSettings.MaxValue;
         var y = d3__WEBPACK_IMPORTED_MODULE_2__/* .scaleLinear */ .BYU()
-            .domain([minvalue, maxvalue + range / 4])
+            .domain([minvalue, graphMaxvalue])
             .range([height, 0]);
         // Add Y axis
         svg.append('g')
@@ -347,12 +386,26 @@ class Visual {
             // formats y-axis labels with appropriate units
             return nFormatter(parseInt(data.toString()), this.settings.YAxisSettings.DisplayDigits, this.settings.YAxisSettings.DisplayUnits);
         })
-            .ticks(this.settings.YAxisSettings.TickCount))
+            .ticks(this.settings.YAxisSettings.TickCount)
+            .tickSize(settings.LayoutSettings.ToggleGridLines ? -width : 6))
             .call(_ => {
+            if (settings.LayoutSettings.ToggleGridLines) {
+                d3__WEBPACK_IMPORTED_MODULE_2__/* .selectAll */ .td_('line')
+                    .attr('stroke-dasharray', '1,3')
+                    .attr('stroke', settings.LayoutSettings.AxisColor)
+                    .attr('stroke-width', +settings.LayoutSettings.ToggleGridLines)
+                    .style('fill', settings.LayoutSettings.AxisColor);
+            }
             d3__WEBPACK_IMPORTED_MODULE_2__/* .selectAll */ .td_('.y-axis-g text')
                 .style('fill', this.settings.YAxisSettings.FontColor)
                 .style('font-family', this.settings.YAxisSettings.FontFamily)
                 .style('font-size', this.settings.YAxisSettings.FontSize);
+        })
+            .call(g => {
+            g.selectAll('.y-axis-g path') // Select the y-axis line
+                .attr('stroke', settings.LayoutSettings.AxisColor);
+            g.selectAll('.y-axis-g line') // Select tick mark lines
+                .attr('stroke', settings.LayoutSettings.AxisColor);
         });
         function nFormatter(num, digits, displayUnits) {
             // converts 15,000 to 15k and etc
@@ -450,12 +503,31 @@ class Visual {
                 groupedData = groupedDataYearly;
             }
             let isMax = settings.PointLabels.Value == 'max';
+            // const sortedDataPoints = groupedDataYearly.get(2022).slice().sort((a, b) => b.value - a.value);
+            // console.log(sortedDataPoints);
+            // Take the nth point from this sorted list after doing it for each year/month.
             groupedData.forEach((dataPoints) => {
-                let currentVal = dataPoints[0];
-                for (const dataPoint of dataPoints) {
-                    if (isMax ? dataPoint.value >= currentVal.value : dataPoint.value <= currentVal.value) {
-                        currentVal = dataPoint;
-                    }
+                let currentVal;
+                let n = settings.PointLabels.nValue;
+                // for (const dataPoint of dataPoints) {
+                //     if (isMax? dataPoint.value >= currentVal.value : dataPoint.value <= currentVal.value) {
+                //         currentVal = dataPoint;
+                //     }
+                // }
+                // Sort data to get nth value
+                const sortedData = dataPoints.slice().sort((a, b) => b.value - a.value);
+                console.log(sortedData);
+                if (n > sortedData.length) {
+                    n = sortedData.length;
+                }
+                else if (n < 1) {
+                    n = 1;
+                }
+                if (isMax) {
+                    currentVal = sortedData[n - 1];
+                }
+                else {
+                    currentVal = sortedData[sortedData.length - n];
                 }
                 svg.append("circle")
                     .attr("class", "graphPoint")
@@ -524,7 +596,7 @@ class Visual {
                 .attr("cy", y(growthPoint2.value))
                 .attr("r", 5);
             // Create path
-            let widthOffset = 20;
+            let widthOffset = settings.GrowthIndicator.LineOffsetWidth;
             let path = d3__WEBPACK_IMPORTED_MODULE_2__/* .line */ .jvg()([
                 [x(growthPoint1.date), y(growthPoint1.value)],
                 [width + widthOffset, y(growthPoint1.value)],
@@ -534,38 +606,60 @@ class Visual {
             // Draw path
             svg.append('path')
                 .attr('fill', 'none')
-                .attr('stroke', 'black')
-                .attr('stroke-width', '1')
+                .attr('stroke', settings.GrowthIndicator.LineColor)
+                .attr('stroke-width', settings.GrowthIndicator.LineSize)
                 .attr('stroke-dasharray', '5,4')
                 .attr('d', path);
             let growthPercent = (growthPoint2.value - growthPoint1.value) / growthPoint1.value * 100;
             growthPercent = Math.round(growthPercent * 10) / 10;
-            let growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
+            let growthPercentStr;
+            if (!settings.PrimaryLabelSettings.ShowSign) {
+                growthPercentStr = Math.abs(growthPercent);
+            }
+            else {
+                growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
+            }
             let increasing = growthPercent > 0 ? true : false;
             let minY = (y(growthPoint1.value) >= y(growthPoint2.value)) ? y(growthPoint2.value) : y(growthPoint1.value);
             let maxY = (y(growthPoint1.value) >= y(growthPoint2.value)) ? y(growthPoint1.value) : y(growthPoint2.value);
-            // Arrowhead
-            if (this.settings.GrowthIndicator.ShowArrow) {
-                svg.append('path')
-                    .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .symbol */ .NAG().type(d3__WEBPACK_IMPORTED_MODULE_2__/* .symbolTriangle */ .P67).size(this.settings.GrowthIndicator.ArrowSize))
-                    .attr('fill', growthPercent > 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
-                    .attr('transform', `translate(${width + widthOffset}, ${increasing ? minY : maxY}) rotate(${increasing ? 0 : 60})`);
+            if (settings.GrowthIndicator.ShowArrowLine) {
+                // Arrowhead
+                if (this.settings.GrowthIndicator.ShowArrow) {
+                    svg.append('path')
+                        .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .symbol */ .NAG().type(d3__WEBPACK_IMPORTED_MODULE_2__/* .symbolTriangle */ .P67).size(this.settings.GrowthIndicator.ArrowSize))
+                        .attr('fill', growthPercent > 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
+                        .attr('transform', `translate(${width + widthOffset}, ${increasing ? minY : maxY}) rotate(${increasing ? 0 : 60})`);
+                }
+                let arrowLine = svg.append('line')
+                    .attr('x1', width + widthOffset)
+                    .attr('y1', y(growthPoint1.value))
+                    .attr('x2', width + widthOffset)
+                    .attr('y2', y(growthPoint2.value))
+                    .attr('stroke', growthPercent >= 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
+                    .attr('stroke-width', settings.GrowthIndicator.LineSize + 1);
             }
-            let arrowLine = svg.append('line')
-                .attr('x1', width + widthOffset)
-                .attr('y1', y(growthPoint1.value))
-                .attr('x2', width + widthOffset)
-                .attr('y2', y(growthPoint2.value))
-                .attr('stroke', growthPercent >= 0 ? this.settings.GrowthIndicator.IncreasingColour : this.settings.GrowthIndicator.DecreasingColour)
-                .attr('stroke-width', 2);
+            if (settings.PrimaryLabelSettings.ToggleBgShape) {
+                let textWidth = getTextWidth(growthPercentStr.toString() + '%', settings.PrimaryLabelSettings);
+                let growthEllipse = svg.append('ellipse')
+                    .attr('rx', settings.PrimaryLabelSettings.LabelMinWidth + 10 > textWidth ? settings.PrimaryLabelSettings.LabelMinWidth : textWidth - 10) // resizes label based on text width
+                    .attr('ry', settings.PrimaryLabelSettings.LabelHeight)
+                    .attr('cx', width + widthOffset + settings.PrimaryLabelSettings.LabelOffsetWidth)
+                    .attr('cy', (y(growthPoint1.value) + y(growthPoint2.value)) / 2)
+                    .attr('fill', settings.PrimaryLabelSettings.LabelBackgroundColor)
+                    .attr('stroke', settings.PrimaryLabelSettings.BorderColor)
+                    .attr('stroke-width', settings.PrimaryLabelSettings.BorderSize);
+            }
             let growthText = svg.append('text')
-                .attr('fill', 'black')
-                .attr('font-size', 12)
+                .attr('fill', settings.PrimaryLabelSettings.FontColor)
+                .attr('font-size', settings.PrimaryLabelSettings.FontSize)
+                .attr('font-family', settings.PrimaryLabelSettings.FontFamily)
+                .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
                 .attr('y', (y(growthPoint1.value) + y(growthPoint2.value)) / 2)
-                .attr('x', width + widthOffset + 5)
+                .attr('x', width + widthOffset + settings.PrimaryLabelSettings.LabelOffsetWidth)
                 .text(growthPercentStr + '%');
         }
+        // Secondary Growth Indicator
         if (settings.SecondaryGrowthIndicator.ToggleGrowthIndicator) {
             // Get data points selected
             let selector1 = this.settings.SecondaryGrowthIndicator.Selector1;
@@ -632,7 +726,7 @@ class Visual {
                 .attr("cy", y(growthPoint2.value))
                 .attr("r", 5);
             // Create path
-            let heightOffset = settings.SecondaryLabelSettings.LabelOffsetHeight;
+            let heightOffset = settings.SecondaryGrowthIndicator.LineOffsetHeight;
             let top = (settings.SecondaryLabelSettings.Location == 'top');
             let lineY = top ? y(y.domain()[1]) + heightOffset : y(settings.YAxisSettings.MinValue) - heightOffset;
             let path = d3__WEBPACK_IMPORTED_MODULE_2__/* .line */ .jvg()([
@@ -644,13 +738,19 @@ class Visual {
             // Draw path
             svg.append('path')
                 .attr('fill', 'none')
-                .attr('stroke', 'black')
-                .attr('stroke-width', '1')
+                .attr('stroke', settings.SecondaryGrowthIndicator.LineColor)
+                .attr('stroke-width', settings.SecondaryGrowthIndicator.LineSize)
                 .attr('stroke-dasharray', '5,4')
                 .attr('d', path);
             let growthPercent = (growthPoint2.value - growthPoint1.value) / growthPoint1.value * 100;
             growthPercent = Math.round(growthPercent * 10) / 10;
-            let growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
+            let growthPercentStr;
+            if (!settings.SecondaryLabelSettings.ShowSign) {
+                growthPercentStr = Math.abs(growthPercent);
+            }
+            else {
+                growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
+            }
             let increasing = growthPercent > 0 ? true : false;
             let averageX = (x(growthPoint1.date) + x(growthPoint2.date)) / 2;
             if (settings.SecondaryLabelSettings.ToggleBgShape) {
@@ -659,7 +759,7 @@ class Visual {
                     .attr('rx', settings.SecondaryLabelSettings.LabelMinWidth + 10 > textWidth ? settings.SecondaryLabelSettings.LabelMinWidth : textWidth - 10) // resizes label based on text width
                     .attr('ry', settings.SecondaryLabelSettings.LabelHeight)
                     .attr('cx', averageX)
-                    .attr('cy', lineY)
+                    .attr('cy', lineY - settings.SecondaryLabelSettings.LabelOffsetHeight)
                     .attr('fill', settings.SecondaryLabelSettings.LabelBackgroundColor)
                     .attr('stroke', settings.SecondaryLabelSettings.BorderColor)
                     .attr('stroke-width', settings.SecondaryLabelSettings.BorderSize);
@@ -672,9 +772,40 @@ class Visual {
                 .attr('font-family', settings.SecondaryLabelSettings.FontFamily)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('y', lineY)
+                .attr('y', lineY - settings.SecondaryLabelSettings.LabelOffsetHeight)
                 .attr('x', averageX)
                 .text(growthPercentStr.toString() + '%');
+            let rotation = settings.SecondaryLabelSettings.Location == 'top' ? 60 : 0;
+            let arrowOffset = settings.SecondaryLabelSettings.Location == 'top' ? -settings.SecondaryGrowthIndicator.ArrowOffset : settings.SecondaryGrowthIndicator.ArrowOffset;
+            switch (settings.SecondaryGrowthIndicator.DisplayArrow) {
+                case 'left':
+                    // draw first arrow
+                    drawTriangle(x(growthPoint1.date), y(growthPoint1.value) + arrowOffset, settings.SecondaryGrowthIndicator, rotation);
+                    break;
+                case 'right':
+                    // draw second arrow
+                    drawTriangle(x(growthPoint2.date), y(growthPoint2.value) + arrowOffset, settings.SecondaryGrowthIndicator, rotation);
+                    break;
+                case 'both':
+                    // draw first arrow
+                    drawTriangle(x(growthPoint1.date), y(growthPoint1.value) + arrowOffset, settings.SecondaryGrowthIndicator, rotation);
+                    // draw second arrow
+                    drawTriangle(x(growthPoint2.date), y(growthPoint2.value) + arrowOffset, settings.SecondaryGrowthIndicator, rotation);
+                    break;
+                default:
+                    break;
+            }
+        }
+        // draws triangles/arrows on the svg
+        function drawTriangle(x, y, settings, rotation) {
+            /*
+            * Param: x coord, y coord, settings, rotation
+            * Returns: none
+            */
+            svg.append('path')
+                .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .symbol */ .NAG().type(d3__WEBPACK_IMPORTED_MODULE_2__/* .symbolTriangle */ .P67).size(settings.ArrowSize))
+                .attr('fill', settings.LineColor)
+                .attr('transform', `translate(${x}, ${y}) rotate(${rotation})`);
         }
         // gets displayed width of text
         function getTextWidth(text, settings) {
@@ -753,11 +884,13 @@ class Visual {
         // Update annotation after being dragged
         function update() {
             let fontsize = settings.AnnotationSettings.FontSize;
+            let yOffset = -settings.AnnotationSettings.YOffset;
+            let xOffset = settings.AnnotationSettings.XOffset;
             svg.selectAll('.annotationText')
                 .data(annotations)
                 .join('text')
-                .attr('x', function (d) { return d.x; })
-                .attr('y', function (d) { return d.y; })
+                .attr('x', function (d) { return d.x + xOffset; })
+                .attr('y', function (d) { return d.y + yOffset; })
                 .attr('font-size', fontsize)
                 .style('fill', settings.AnnotationSettings.FontColor)
                 .style('font-family', settings.AnnotationSettings.FontFamily)
@@ -775,10 +908,10 @@ class Visual {
                 .attr('stroke-width', settings.AnnotationSettings.LineThickness), update => update.attr("x1", function (d) { return x(d.date); })
                 .attr("y1", function (d) { return y(d.value); })
                 .attr("x2", function (d) {
-                return d.x + d.text.length * (fontsize / 4.5);
+                return d.x + d.text.length * (fontsize / 4.5) + xOffset;
             })
                 .attr("y2", function (d) {
-                return (d.y > y(d.value) ? d.y - fontsize : d.y + fontsize / 2);
+                return (d.y > (y(d.value) - yOffset) ? d.y - fontsize + yOffset : d.y + yOffset + fontsize / 2);
             }));
             // set line type (if dashed is selected)
             if (settings.AnnotationSettings.LineStyle == 'dashed') {
@@ -796,13 +929,15 @@ class Visual {
             }
         }
         if (settings.AnnotationSettings.ToggleAnnotations && commentIndex >= 0) {
+            let yOffset = -settings.AnnotationSettings.YOffset;
+            let xOffset = settings.AnnotationSettings.XOffset;
             // update();
             svg.selectAll('.annotationText')
                 .data(this.annotations)
                 .join('text')
                 .classed('annotationText', true)
-                .attr('x', function (d) { return d.x; })
-                .attr('y', function (d) { return d.y; })
+                .attr('x', function (d) { return d.x + xOffset; })
+                .attr('y', function (d) { return d.y + yOffset; })
                 .attr('font-size', settings.AnnotationSettings.FontSize)
                 .style('fill', settings.AnnotationSettings.FontColor)
                 .style('font-family', settings.AnnotationSettings.FontFamily)
@@ -816,10 +951,10 @@ class Visual {
                 .attr("x1", function (d) { return x(d.date); })
                 .attr("y1", function (d) { return y(d.value); })
                 .attr("x2", function (d) {
-                return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5);
+                return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5) + xOffset;
             })
                 .attr("y2", function (d) {
-                return (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                return (d.y > (y(d.value) - yOffset) ? d.y - settings.AnnotationSettings.FontSize + yOffset : d.y + yOffset + settings.AnnotationSettings.FontSize / 2);
             })
                 .attr('stroke', settings.AnnotationSettings.LineColor)
                 .attr('stroke-width', settings.AnnotationSettings.LineThickness), update => update.attr("x1", function (d) { return x(d.date); })
@@ -828,7 +963,7 @@ class Visual {
                 return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5);
             })
                 .attr("y2", function (d) {
-                return (d.y > y(d.value) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
+                return (d.y > (y(d.value) - yOffset) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
             }));
             // set line type (if dashed is selected)
             if (settings.AnnotationSettings.LineStyle == 'dashed') {
