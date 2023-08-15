@@ -50,7 +50,7 @@ export class LayoutSettings {
     public ChartRightMargin: number = 70;
 
     public AxisColor: string = '#CCCCCC';
-    public ToggleGridLines: boolean = false;
+    public ToggleGridLines: string = "none";
 
 }
 

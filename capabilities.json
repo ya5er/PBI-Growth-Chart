@@ -96,7 +96,24 @@
                 "ToggleGridLines": {
                     "displayName": "Show Grid Lines",
                     "type": {
-                        "bool": true
+                        "enumeration": [
+                            {
+                                "value": "none",
+                                "displayName": "None"
+                            },
+                            {
+                                "value": "horizontal",
+                                "displayName": "Horizontal"
+                            },
+                            {
+                                "value": "vertical",
+                                "displayName": "Vertical"
+                            },
+                            {
+                                "value": "both",
+                                "displayName": "Both"
+                            }
+                        ]
                     }
                 }
             }

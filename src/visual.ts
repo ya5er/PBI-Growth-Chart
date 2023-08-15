@@ -205,6 +205,7 @@ export class Visual implements IVisual {
             .range([ 0, width ]);
 
         // Add X axis
+        let toggleXGridlines = (settings.LayoutSettings.ToggleGridLines == "both" || settings.LayoutSettings.ToggleGridLines == "vertical");
         svg.append('g')
             .classed('x-axis-g', true)  
             .attr('transform', 'translate(0,' + height + ')')
@@ -216,7 +217,17 @@ export class Visual implements IVisual {
                         //return d3.timeFormat('%Y')(date);
                     //}
                 })
-                .ticks(this.settings.XAxisSettings.TickCount))
+                .ticks(this.settings.XAxisSettings.TickCount)
+                .tickSize(toggleXGridlines ? -height : 6))
+            .call(_ => {
+                if (toggleXGridlines) {
+                    d3.selectAll('line')
+                        .attr('stroke-dasharray', '1,3')
+                        .attr('stroke', settings.LayoutSettings.AxisColor)
+                        .attr('stroke-width', +toggleXGridlines)
+                        .style('fill', settings.LayoutSettings.AxisColor);
+                }
+            })
             .call(g => {
                 g.selectAll('.x-axis-g path') // Select the y-axis line
                     .attr('stroke', settings.LayoutSettings.AxisColor); 
@@ -243,21 +254,22 @@ export class Visual implements IVisual {
             .range([ height, 0 ]);
         
         // Add Y axis
+        let toggleYGridlines = (settings.LayoutSettings.ToggleGridLines == "both" || settings.LayoutSettings.ToggleGridLines == "horizontal");
         svg.append('g')
             .classed('y-axis-g', true)
             .call(d3.axisLeft(y)
-                    .tickFormat(data => {
-                        // formats y-axis labels with appropriate units
-                        return nFormatter(parseInt(data.toString()), this.settings.YAxisSettings.DisplayDigits, this.settings.YAxisSettings.DisplayUnits);
-                    })
+                .tickFormat(data => {
+                    // formats y-axis labels with appropriate units
+                    return nFormatter(parseInt(data.toString()), this.settings.YAxisSettings.DisplayDigits, this.settings.YAxisSettings.DisplayUnits);
+                })
                 .ticks(this.settings.YAxisSettings.TickCount)
-                .tickSize(settings.LayoutSettings.ToggleGridLines ? -width : 6))
+                .tickSize(toggleYGridlines ? -width : 6))
             .call(_ => {
-                if (settings.LayoutSettings.ToggleGridLines) {
+                if (toggleYGridlines) {
                     d3.selectAll('line')
                         .attr('stroke-dasharray', '1,3')
                         .attr('stroke', settings.LayoutSettings.AxisColor)
-                        .attr('stroke-width', +settings.LayoutSettings.ToggleGridLines)
+                        .attr('stroke-width', +toggleYGridlines)
                         .style('fill', settings.LayoutSettings.AxisColor);
                 }
                 d3.selectAll('.y-axis-g text')
