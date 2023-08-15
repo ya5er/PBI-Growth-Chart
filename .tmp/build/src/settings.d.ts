@@ -86,6 +86,10 @@ export declare class PrimaryLabelSettings {
     BorderSize: number;
     LabelHeight: number;
     LabelMinWidth: number;
+    ToggleTextLabel: boolean;
+    TextValue: string;
+    AnnotationX: number;
+    AnnotationY: number;
 }
 export declare class SecondaryGrowthIndicator {
     ToggleGrowthIndicator: boolean;
@@ -111,6 +115,10 @@ export declare class SecondaryLabelSettings {
     BorderSize: number;
     LabelHeight: number;
     LabelMinWidth: number;
+    ToggleTextLabel: boolean;
+    TextValue: string;
+    AnnotationX: number;
+    AnnotationY: number;
 }
 export declare class AnnotationSettings {
     ToggleAnnotations: boolean;

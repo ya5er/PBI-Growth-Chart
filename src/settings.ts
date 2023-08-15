@@ -149,6 +149,11 @@ export class PrimaryLabelSettings {
 
     public LabelHeight: number = 10;
     public LabelMinWidth: number = 20;
+
+    public ToggleTextLabel: boolean = false;
+    public TextValue: string = 'mOm';
+    public AnnotationX: number = 0;
+    public AnnotationY : number = 15;
 }
 
 export class SecondaryGrowthIndicator {
@@ -167,7 +172,7 @@ export class SecondaryGrowthIndicator {
 }
 
 export class SecondaryLabelSettings {
-    public Location: string = 'top';
+    public Location: string = 'bottom';
     public ShowSign: boolean = true;
 
     public FontColor: string = '#000000';
@@ -184,6 +189,11 @@ export class SecondaryLabelSettings {
 
     public LabelHeight: number = 10;
     public LabelMinWidth: number = 20;
+
+    public ToggleTextLabel: boolean = false;
+    public TextValue: string = 'yOy';
+    public AnnotationX: number = 0;
+    public AnnotationY : number = 20;
 }
 
 export class AnnotationSettings {
@@ -193,10 +203,10 @@ export class AnnotationSettings {
     public YOffset: number = 30;
 
     public FontFamily: string = 'Calibri';
-    public FontColor: string = '#666666';
+    public FontColor: string = '#B3B3B3';
     public FontSize: number = 10;
 
-    public LineColor: string = '#666666';
+    public LineColor: string = '#B3B3B3';
     public LineThickness: number = 1;
     public LineStyle: string = 'solid';
 

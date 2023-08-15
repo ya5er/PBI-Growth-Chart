@@ -297,7 +297,7 @@
             }
         },
         "PointLabels": {
-            "displayName": "Point Labels",
+            "displayName": "Rank Selection",
             "properties": {
                 "TogglePointLabels": {
                     "displayName": "Show Point Labels",
@@ -546,6 +546,30 @@
                     "type": {
                         "numeric": true
                     }
+                },
+                "ToggleTextLabel": {
+                    "displayName": "Show Text Label",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "TextValue": {
+                    "displayName": "Text Label",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "AnnotationX": {
+                    "displayName": "Annotation X Offset",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "AnnotationY": {
+                    "displayName": "Annotation Y Offset",
+                    "type": {
+                        "numeric": true
+                    }
                 }
             }
         },
@@ -725,6 +749,30 @@
                 },
                 "LabelMinWidth": {
                     "displayName": "Min Label Width",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "ToggleTextLabel": {
+                    "displayName": "Show Text Annotation",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "TextValue": {
+                    "displayName": "Text Annotation",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "AnnotationX": {
+                    "displayName": "Annotation X Offset",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "AnnotationY": {
+                    "displayName": "Annotation Y Offset",
                     "type": {
                         "numeric": true
                     }

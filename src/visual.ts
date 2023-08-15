@@ -448,20 +448,40 @@ export class Visual implements IVisual {
                 const month1Data = groupedDataMonthly.get(month1);
                 const month2Data = groupedDataMonthly.get(month2);
 
-                defaultPoint1 = month1Data[0];
+                // Sort data to get nth value
+                const sortedData1 = month1Data.slice().sort((a, b) => b.value - a.value);
+                const sortedData2 = month2Data.slice().sort((a, b) => b.value - a.value);
 
-                for (const dataPoint of month1Data) {
-                    if (dataPoint.value >= defaultPoint1.value) {
-                        defaultPoint1 = dataPoint;
-                    }
+                // First point
+                defaultPoint1 = sortedData1[0];
+                let n = settings.PointLabels.nValue;
+
+                if (n > sortedData1.length) {
+                    n = sortedData1.length;
+                } else if (n < 1) {
+                    n = 1;
                 }
 
-                defaultPoint2 = month2Data[0];
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint1 = sortedData1[n - 1];
+                } else {
+                    defaultPoint1 = sortedData1[sortedData1.length - n];
+                }
 
-                for (const dataPoint of month2Data) {
-                    if (dataPoint.value >= defaultPoint2.value) {
-                        defaultPoint2 = dataPoint;
-                    }
+                // Second point
+                n = settings.PointLabels.nValue;
+                defaultPoint2 = sortedData2[0];
+
+                if (n > sortedData2.length) {
+                    n = sortedData2.length;
+                } else if (n < 1) {
+                    n = 1;
+                }
+
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint2 = sortedData2[n - 1];
+                } else {
+                    defaultPoint2 = sortedData2[sortedData2.length - n];
                 }
 
             } else {
@@ -562,6 +582,18 @@ export class Visual implements IVisual {
                 .attr('x', width + widthOffset + settings.PrimaryLabelSettings.LabelOffsetWidth)
                 .text(growthPercentStr + '%');
 
+            if (settings.PrimaryLabelSettings.ToggleTextLabel) {
+                svg.append('text')
+                    .attr('fill', settings.AnnotationSettings.FontColor)
+                    .attr('font-size', settings.AnnotationSettings.FontSize)
+                    .attr('font-family', settings.AnnotationSettings.FontFamily)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('y', ((y(growthPoint1.value) + y(growthPoint2.value)) / 2) + settings.PrimaryLabelSettings.AnnotationY)
+                    .attr('x', width + widthOffset + settings.PrimaryLabelSettings.LabelOffsetWidth + settings.PrimaryLabelSettings.AnnotationX)
+                    .text(settings.PrimaryLabelSettings.TextValue);
+            }
+
         }
 
         // Secondary Growth Indicator
@@ -582,20 +614,40 @@ export class Visual implements IVisual {
                 const month1Data = groupedDataMonthly.get(month1);
                 const month2Data = groupedDataMonthly.get(month2);
 
-                defaultPoint1 = month1Data[0];
+                // Sort data to get nth value
+                const sortedData1 = month1Data.slice().sort((a, b) => b.value - a.value);
+                const sortedData2 = month2Data.slice().sort((a, b) => b.value - a.value);
 
-                for (const dataPoint of month1Data) {
-                    if (dataPoint.value >= defaultPoint1.value) {
-                        defaultPoint1 = dataPoint;
-                    }
+                // First point
+                defaultPoint1 = sortedData1[0];
+                let n = settings.PointLabels.nValue;
+
+                if (n > sortedData1.length) {
+                    n = sortedData1.length;
+                } else if (n < 1) {
+                    n = 1;
                 }
 
-                defaultPoint2 = month2Data[0];
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint1 = sortedData1[n - 1];
+                } else {
+                    defaultPoint1 = sortedData1[sortedData1.length - n];
+                }
 
-                for (const dataPoint of month2Data) {
-                    if (dataPoint.value >= defaultPoint2.value) {
-                        defaultPoint2 = dataPoint;
-                    }
+                // Second point
+                n = settings.PointLabels.nValue;
+                defaultPoint2 = sortedData2[0];
+
+                if (n > sortedData2.length) {
+                    n = sortedData2.length;
+                } else if (n < 1) {
+                    n = 1;
+                }
+
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint2 = sortedData2[n - 1];
+                } else {
+                    defaultPoint2 = sortedData2[sortedData2.length - n];
                 }
 
             } else if (groupedDataMonthly.size >= 2) {
@@ -605,20 +657,40 @@ export class Visual implements IVisual {
                 const month1Data = groupedDataMonthly.get(month1);
                 const month2Data = groupedDataMonthly.get(month2);
 
-                defaultPoint1 = month1Data[0];
+                // Sort data to get nth value
+                const sortedData1 = month1Data.slice().sort((a, b) => b.value - a.value);
+                const sortedData2 = month2Data.slice().sort((a, b) => b.value - a.value);
 
-                for (const dataPoint of month1Data) {
-                    if (dataPoint.value >= defaultPoint1.value) {
-                        defaultPoint1 = dataPoint;
-                    }
+                // First point
+                defaultPoint1 = sortedData1[0];
+                let n = settings.PointLabels.nValue;
+
+                if (n > sortedData1.length) {
+                    n = sortedData1.length;
+                } else if (n < 1) {
+                    n = 1;
                 }
 
-                defaultPoint2 = month2Data[0];
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint1 = sortedData1[n - 1];
+                } else {
+                    defaultPoint1 = sortedData1[sortedData1.length - n];
+                }
 
-                for (const dataPoint of month2Data) {
-                    if (dataPoint.value >= defaultPoint2.value) {
-                        defaultPoint2 = dataPoint;
-                    }
+                // Second point
+                n = settings.PointLabels.nValue;
+                defaultPoint2 = sortedData2[0];
+
+                if (n > sortedData2.length) {
+                    n = sortedData2.length;
+                } else if (n < 1) {
+                    n = 1;
+                }
+
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint2 = sortedData2[n - 1];
+                } else {
+                    defaultPoint2 = sortedData2[sortedData2.length - n];
                 }
 
             } else {
@@ -667,6 +739,7 @@ export class Visual implements IVisual {
             let growthPercent = (growthPoint2.value - growthPoint1.value) / growthPoint1.value * 100;
             growthPercent = Math.round(growthPercent * 10) / 10;
             let growthPercentStr;
+
             if (!settings.SecondaryLabelSettings.ShowSign) {
                 growthPercentStr = Math.abs(growthPercent);
             } else {
@@ -722,6 +795,19 @@ export class Visual implements IVisual {
 
                 default:
                     break;
+            }
+
+            if (settings.SecondaryLabelSettings.ToggleTextLabel) {
+                let annotateOffset = top ? settings.SecondaryLabelSettings.AnnotationY : -settings.SecondaryLabelSettings.AnnotationY;
+                svg.append('text')
+                    .attr('fill', settings.AnnotationSettings.FontColor)
+                    .attr('font-size', settings.AnnotationSettings.FontSize)
+                    .attr('font-family', settings.AnnotationSettings.FontFamily)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('y', lineY - settings.SecondaryLabelSettings.LabelOffsetHeight + annotateOffset)
+                    .attr('x', averageX + settings.SecondaryLabelSettings.AnnotationX)
+                    .text(settings.SecondaryLabelSettings.TextValue);
             }
         }
 

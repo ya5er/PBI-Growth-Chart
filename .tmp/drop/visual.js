@@ -143,6 +143,10 @@ class PrimaryLabelSettings {
         this.BorderSize = 1;
         this.LabelHeight = 10;
         this.LabelMinWidth = 20;
+        this.ToggleTextLabel = false;
+        this.TextValue = 'mOm';
+        this.AnnotationX = 0;
+        this.AnnotationY = 15;
     }
 }
 class SecondaryGrowthIndicator {
@@ -160,7 +164,7 @@ class SecondaryGrowthIndicator {
 }
 class SecondaryLabelSettings {
     constructor() {
-        this.Location = 'top';
+        this.Location = 'bottom';
         this.ShowSign = true;
         this.FontColor = '#000000';
         this.FontFamily = 'Calibri';
@@ -172,6 +176,10 @@ class SecondaryLabelSettings {
         this.BorderSize = 1;
         this.LabelHeight = 10;
         this.LabelMinWidth = 20;
+        this.ToggleTextLabel = false;
+        this.TextValue = 'yOy';
+        this.AnnotationX = 0;
+        this.AnnotationY = 20;
     }
 }
 class AnnotationSettings {
@@ -180,9 +188,9 @@ class AnnotationSettings {
         this.XOffset = 20;
         this.YOffset = 30;
         this.FontFamily = 'Calibri';
-        this.FontColor = '#666666';
+        this.FontColor = '#B3B3B3';
         this.FontSize = 10;
-        this.LineColor = '#666666';
+        this.LineColor = '#B3B3B3';
         this.LineThickness = 1;
         this.LineStyle = 'solid';
         this.ShowArrow = false;
@@ -558,17 +566,38 @@ class Visual {
                 const month1 = Array.from(groupedDataMonthly.keys()).slice(-2, -1).pop();
                 const month1Data = groupedDataMonthly.get(month1);
                 const month2Data = groupedDataMonthly.get(month2);
-                defaultPoint1 = month1Data[0];
-                for (const dataPoint of month1Data) {
-                    if (dataPoint.value >= defaultPoint1.value) {
-                        defaultPoint1 = dataPoint;
-                    }
+                // Sort data to get nth value
+                const sortedData1 = month1Data.slice().sort((a, b) => b.value - a.value);
+                const sortedData2 = month2Data.slice().sort((a, b) => b.value - a.value);
+                // First point
+                defaultPoint1 = sortedData1[0];
+                let n = settings.PointLabels.nValue;
+                if (n > sortedData1.length) {
+                    n = sortedData1.length;
                 }
-                defaultPoint2 = month2Data[0];
-                for (const dataPoint of month2Data) {
-                    if (dataPoint.value >= defaultPoint2.value) {
-                        defaultPoint2 = dataPoint;
-                    }
+                else if (n < 1) {
+                    n = 1;
+                }
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint1 = sortedData1[n - 1];
+                }
+                else {
+                    defaultPoint1 = sortedData1[sortedData1.length - n];
+                }
+                // Second point
+                n = settings.PointLabels.nValue;
+                defaultPoint2 = sortedData2[0];
+                if (n > sortedData2.length) {
+                    n = sortedData2.length;
+                }
+                else if (n < 1) {
+                    n = 1;
+                }
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint2 = sortedData2[n - 1];
+                }
+                else {
+                    defaultPoint2 = sortedData2[sortedData2.length - n];
                 }
             }
             else {
@@ -658,6 +687,17 @@ class Visual {
                 .attr('y', (y(growthPoint1.value) + y(growthPoint2.value)) / 2)
                 .attr('x', width + widthOffset + settings.PrimaryLabelSettings.LabelOffsetWidth)
                 .text(growthPercentStr + '%');
+            if (settings.PrimaryLabelSettings.ToggleTextLabel) {
+                svg.append('text')
+                    .attr('fill', settings.AnnotationSettings.FontColor)
+                    .attr('font-size', settings.AnnotationSettings.FontSize)
+                    .attr('font-family', settings.AnnotationSettings.FontFamily)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('y', ((y(growthPoint1.value) + y(growthPoint2.value)) / 2) + settings.PrimaryLabelSettings.AnnotationY)
+                    .attr('x', width + widthOffset + settings.PrimaryLabelSettings.LabelOffsetWidth + settings.PrimaryLabelSettings.AnnotationX)
+                    .text(settings.PrimaryLabelSettings.TextValue);
+            }
         }
         // Secondary Growth Indicator
         if (settings.SecondaryGrowthIndicator.ToggleGrowthIndicator) {
@@ -674,17 +714,38 @@ class Visual {
                 console.log(month2);
                 const month1Data = groupedDataMonthly.get(month1);
                 const month2Data = groupedDataMonthly.get(month2);
-                defaultPoint1 = month1Data[0];
-                for (const dataPoint of month1Data) {
-                    if (dataPoint.value >= defaultPoint1.value) {
-                        defaultPoint1 = dataPoint;
-                    }
+                // Sort data to get nth value
+                const sortedData1 = month1Data.slice().sort((a, b) => b.value - a.value);
+                const sortedData2 = month2Data.slice().sort((a, b) => b.value - a.value);
+                // First point
+                defaultPoint1 = sortedData1[0];
+                let n = settings.PointLabels.nValue;
+                if (n > sortedData1.length) {
+                    n = sortedData1.length;
                 }
-                defaultPoint2 = month2Data[0];
-                for (const dataPoint of month2Data) {
-                    if (dataPoint.value >= defaultPoint2.value) {
-                        defaultPoint2 = dataPoint;
-                    }
+                else if (n < 1) {
+                    n = 1;
+                }
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint1 = sortedData1[n - 1];
+                }
+                else {
+                    defaultPoint1 = sortedData1[sortedData1.length - n];
+                }
+                // Second point
+                n = settings.PointLabels.nValue;
+                defaultPoint2 = sortedData2[0];
+                if (n > sortedData2.length) {
+                    n = sortedData2.length;
+                }
+                else if (n < 1) {
+                    n = 1;
+                }
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint2 = sortedData2[n - 1];
+                }
+                else {
+                    defaultPoint2 = sortedData2[sortedData2.length - n];
                 }
             }
             else if (groupedDataMonthly.size >= 2) {
@@ -692,17 +753,38 @@ class Visual {
                 const month1 = Array.from(groupedDataMonthly.keys()).slice(-2, -1).pop();
                 const month1Data = groupedDataMonthly.get(month1);
                 const month2Data = groupedDataMonthly.get(month2);
-                defaultPoint1 = month1Data[0];
-                for (const dataPoint of month1Data) {
-                    if (dataPoint.value >= defaultPoint1.value) {
-                        defaultPoint1 = dataPoint;
-                    }
+                // Sort data to get nth value
+                const sortedData1 = month1Data.slice().sort((a, b) => b.value - a.value);
+                const sortedData2 = month2Data.slice().sort((a, b) => b.value - a.value);
+                // First point
+                defaultPoint1 = sortedData1[0];
+                let n = settings.PointLabels.nValue;
+                if (n > sortedData1.length) {
+                    n = sortedData1.length;
                 }
-                defaultPoint2 = month2Data[0];
-                for (const dataPoint of month2Data) {
-                    if (dataPoint.value >= defaultPoint2.value) {
-                        defaultPoint2 = dataPoint;
-                    }
+                else if (n < 1) {
+                    n = 1;
+                }
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint1 = sortedData1[n - 1];
+                }
+                else {
+                    defaultPoint1 = sortedData1[sortedData1.length - n];
+                }
+                // Second point
+                n = settings.PointLabels.nValue;
+                defaultPoint2 = sortedData2[0];
+                if (n > sortedData2.length) {
+                    n = sortedData2.length;
+                }
+                else if (n < 1) {
+                    n = 1;
+                }
+                if (settings.PointLabels.Value == 'max') {
+                    defaultPoint2 = sortedData2[n - 1];
+                }
+                else {
+                    defaultPoint2 = sortedData2[sortedData2.length - n];
                 }
             }
             else {
@@ -794,6 +876,18 @@ class Visual {
                     break;
                 default:
                     break;
+            }
+            if (settings.SecondaryLabelSettings.ToggleTextLabel) {
+                let annotateOffset = top ? settings.SecondaryLabelSettings.AnnotationY : -settings.SecondaryLabelSettings.AnnotationY;
+                svg.append('text')
+                    .attr('fill', settings.AnnotationSettings.FontColor)
+                    .attr('font-size', settings.AnnotationSettings.FontSize)
+                    .attr('font-family', settings.AnnotationSettings.FontFamily)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('y', lineY - settings.SecondaryLabelSettings.LabelOffsetHeight + annotateOffset)
+                    .attr('x', averageX + settings.SecondaryLabelSettings.AnnotationX)
+                    .text(settings.SecondaryLabelSettings.TextValue);
             }
         }
         // draws triangles/arrows on the svg
