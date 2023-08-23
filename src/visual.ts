@@ -211,11 +211,11 @@ export class Visual implements IVisual {
             .attr('transform', 'translate(0,' + height + ')')
             .call(d3.axisBottom(x)
                 .tickFormat(function(date : Date){
-                    //if (d3.timeYear(date) < date) {
+                    if (groupedDataMonthly.size < settings.XAxisSettings.TickCount) {
+                        return d3.timeFormat('%b-%d-%y')(date);
+                    } else {
                         return d3.timeFormat('%b-%y')(date);
-                    //} else {
-                        //return d3.timeFormat('%Y')(date);
-                    //}
+                    }
                 })
                 .ticks(this.settings.XAxisSettings.TickCount)
                 .tickSize(toggleXGridlines ? -height : 6))
@@ -223,16 +223,16 @@ export class Visual implements IVisual {
                 if (toggleXGridlines) {
                     d3.selectAll('line')
                         .attr('stroke-dasharray', '1,3')
-                        .attr('stroke', settings.LayoutSettings.AxisColor)
+                        .attr('stroke', settings.LayoutSettings.GridlineColor)
                         .attr('stroke-width', +toggleXGridlines)
-                        .style('fill', settings.LayoutSettings.AxisColor);
+                        .style('fill', settings.LayoutSettings.GridlineColor);
                 }
             })
             .call(g => {
                 g.selectAll('.x-axis-g path') // Select the y-axis line
                     .attr('stroke', settings.LayoutSettings.AxisColor); 
                 g.selectAll('.x-axis-g line') // Select tick mark lines
-                    .attr('stroke', settings.LayoutSettings.AxisColor);
+                    .attr('stroke', toggleXGridlines ? settings.LayoutSettings.GridlineColor : settings.LayoutSettings.AxisColor);
                 // font settings
                 g.selectAll('.x-axis-g text')
                     .style('fill', this.settings.XAxisSettings.FontColor)
@@ -268,9 +268,9 @@ export class Visual implements IVisual {
                 if (toggleYGridlines) {
                     d3.selectAll('line')
                         .attr('stroke-dasharray', '1,3')
-                        .attr('stroke', settings.LayoutSettings.AxisColor)
+                        .attr('stroke', settings.LayoutSettings.GridlineColor)
                         .attr('stroke-width', +toggleYGridlines)
-                        .style('fill', settings.LayoutSettings.AxisColor);
+                        .style('fill', settings.LayoutSettings.GridlineColor);
                 }
                 d3.selectAll('.y-axis-g text')
                     .style('fill', this.settings.YAxisSettings.FontColor)
@@ -281,7 +281,7 @@ export class Visual implements IVisual {
                 g.selectAll('.y-axis-g path') // Select the y-axis line
                     .attr('stroke', settings.LayoutSettings.AxisColor); 
                 g.selectAll('.y-axis-g line') // Select tick mark lines
-                    .attr('stroke', settings.LayoutSettings.AxisColor);
+                    .attr('stroke', toggleYGridlines ? settings.LayoutSettings.GridlineColor : settings.LayoutSettings.AxisColor);
             });
 
         

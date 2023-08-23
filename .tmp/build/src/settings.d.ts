@@ -20,6 +20,7 @@ export declare class LayoutSettings {
     ChartRightMargin: number;
     AxisColor: string;
     ToggleGridLines: string;
+    GridlineColor: string;
 }
 export declare class LineSettings {
     LineColor: string;

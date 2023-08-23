@@ -115,6 +115,16 @@
                             }
                         ]
                     }
+                },
+                "GridlineColor": {
+                    "displayName": "Gridline Colour",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
                 }
             }
         },

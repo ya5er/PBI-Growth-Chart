@@ -61,8 +61,9 @@ class LayoutSettings {
         this.ChartBottomMargin = 30;
         this.ChartLeftMargin = 60;
         this.ChartRightMargin = 70;
-        this.AxisColor = '#CCCCCC';
-        this.ToggleGridLines = "none";
+        this.AxisColor = '#FFFFFF';
+        this.ToggleGridLines = "both";
+        this.GridlineColor = '#CCCCCC';
     }
 }
 class LineSettings {
@@ -74,7 +75,7 @@ class LineSettings {
 class XAxisSettings {
     constructor() {
         this.FontFamily = 'Calibri';
-        this.FontColor = '#666666';
+        this.FontColor = '#808080';
         this.FontSize = 10;
         this.TickCount = 10;
         this.LabelAngle = 0;
@@ -90,7 +91,7 @@ class YAxisSettings {
         this.DisplayDigits = 1;
         this.TickCount = 6;
         this.FontFamily = 'Calibri';
-        this.FontColor = '#666666';
+        this.FontColor = '#808080';
         this.FontSize = 10;
     }
 }
@@ -359,11 +360,12 @@ class Visual {
             .attr('transform', 'translate(0,' + height + ')')
             .call(d3__WEBPACK_IMPORTED_MODULE_2__/* .axisBottom */ .LLu(x)
             .tickFormat(function (date) {
-            //if (d3.timeYear(date) < date) {
-            return d3__WEBPACK_IMPORTED_MODULE_2__/* .timeFormat */ .i$Z('%b-%y')(date);
-            //} else {
-            //return d3.timeFormat('%Y')(date);
-            //}
+            if (groupedDataMonthly.size < settings.XAxisSettings.TickCount) {
+                return d3__WEBPACK_IMPORTED_MODULE_2__/* .timeFormat */ .i$Z('%b-%d-%y')(date);
+            }
+            else {
+                return d3__WEBPACK_IMPORTED_MODULE_2__/* .timeFormat */ .i$Z('%b-%y')(date);
+            }
         })
             .ticks(this.settings.XAxisSettings.TickCount)
             .tickSize(toggleXGridlines ? -height : 6))
@@ -371,16 +373,16 @@ class Visual {
             if (toggleXGridlines) {
                 d3__WEBPACK_IMPORTED_MODULE_2__/* .selectAll */ .td_('line')
                     .attr('stroke-dasharray', '1,3')
-                    .attr('stroke', settings.LayoutSettings.AxisColor)
+                    .attr('stroke', settings.LayoutSettings.GridlineColor)
                     .attr('stroke-width', +toggleXGridlines)
-                    .style('fill', settings.LayoutSettings.AxisColor);
+                    .style('fill', settings.LayoutSettings.GridlineColor);
             }
         })
             .call(g => {
             g.selectAll('.x-axis-g path') // Select the y-axis line
                 .attr('stroke', settings.LayoutSettings.AxisColor);
             g.selectAll('.x-axis-g line') // Select tick mark lines
-                .attr('stroke', settings.LayoutSettings.AxisColor);
+                .attr('stroke', toggleXGridlines ? settings.LayoutSettings.GridlineColor : settings.LayoutSettings.AxisColor);
             // font settings
             g.selectAll('.x-axis-g text')
                 .style('fill', this.settings.XAxisSettings.FontColor)
@@ -412,9 +414,9 @@ class Visual {
             if (toggleYGridlines) {
                 d3__WEBPACK_IMPORTED_MODULE_2__/* .selectAll */ .td_('line')
                     .attr('stroke-dasharray', '1,3')
-                    .attr('stroke', settings.LayoutSettings.AxisColor)
+                    .attr('stroke', settings.LayoutSettings.GridlineColor)
                     .attr('stroke-width', +toggleYGridlines)
-                    .style('fill', settings.LayoutSettings.AxisColor);
+                    .style('fill', settings.LayoutSettings.GridlineColor);
             }
             d3__WEBPACK_IMPORTED_MODULE_2__/* .selectAll */ .td_('.y-axis-g text')
                 .style('fill', this.settings.YAxisSettings.FontColor)
@@ -425,7 +427,7 @@ class Visual {
             g.selectAll('.y-axis-g path') // Select the y-axis line
                 .attr('stroke', settings.LayoutSettings.AxisColor);
             g.selectAll('.y-axis-g line') // Select tick mark lines
-                .attr('stroke', settings.LayoutSettings.AxisColor);
+                .attr('stroke', toggleYGridlines ? settings.LayoutSettings.GridlineColor : settings.LayoutSettings.AxisColor);
         });
         function nFormatter(num, digits, displayUnits) {
             // converts 15,000 to 15k and etc

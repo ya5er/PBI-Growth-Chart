@@ -49,8 +49,9 @@ export class LayoutSettings {
     public ChartLeftMargin: number = 60;
     public ChartRightMargin: number = 70;
 
-    public AxisColor: string = '#CCCCCC';
-    public ToggleGridLines: string = "none";
+    public AxisColor: string = '#FFFFFF';
+    public ToggleGridLines: string = "both";
+    public GridlineColor: string = '#CCCCCC';
 
 }
 
@@ -62,7 +63,7 @@ export class LineSettings {
 
 export class XAxisSettings {
     public FontFamily: string = 'Calibri';
-    public FontColor: string = '#666666';
+    public FontColor: string = '#808080';
     public FontSize: number = 10;
 
     public TickCount: number = 10;
@@ -84,7 +85,7 @@ export class YAxisSettings {
     public TickCount: number = 6;
 
     public FontFamily: string = 'Calibri';
-    public FontColor: string = '#666666';
+    public FontColor: string = '#808080';
     public FontSize: number = 10;
 }
 
