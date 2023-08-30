@@ -286,6 +286,66 @@
                 }
             }
         },
+        "LegendSettings": {
+            "displayName": "Legend",
+            "properties": {
+                "LegendToggle": {
+                    "displayName": "Show Legend",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "LegendPosition": {
+                    "displayName": "Legend Position",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "value": "top",
+                                "displayName": "Top left"
+                            },
+                            {
+                                "value": "bottom",
+                                "displayName": "Bottom center"
+                            },
+                            {
+                                "value": "left",
+                                "displayName": "Left"
+                            }
+                        ]
+                    }
+                },
+                "LegendMargin": {
+                    "displayName": "Legend Y-Offset",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "FontColor": {
+                    "displayName": "Font Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "FontSize": {
+                    "displayName": "Font Size",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "FontFamily": {
+                    "displayName": "Font Family",
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                }
+            }
+        },
         "TooltipSettings": {
             "displayName": "Tooltip",
             "properties": {

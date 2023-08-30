@@ -6,7 +6,7 @@ p em {
   background: yellow;
   padding: 5px;
 }
-rect {
+.listeningRect {
   pointer-events: all;
   fill-opacity: 0;
   stroke-opacity: 0;
@@ -25,6 +25,10 @@ rect {
 .graphPoint {
   stroke: white;
   opacity: 0.7;
+}
+.hoverInfo {
+  position: absolute;
+  z-index: -1;
 }
 
 

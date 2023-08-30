@@ -33,6 +33,7 @@ export class VisualSettings extends DataViewObjectsParser {
     public LayoutSettings: LayoutSettings = new LayoutSettings();
     public XAxisSettings: XAxisSettings = new XAxisSettings();
     public YAxisSettings: YAxisSettings = new YAxisSettings();
+    public LegendSettings: LegendSettings = new LegendSettings();
     public TooltipSettings: TooltipSettings = new TooltipSettings();
     public PointLabels: PointLabels = new PointLabels();
     public GrowthIndicator: GrowthIndicator = new GrowthIndicator();
@@ -45,7 +46,7 @@ export class VisualSettings extends DataViewObjectsParser {
 
 export class LayoutSettings {
     public ChartTopMargin: number = 10;
-    public ChartBottomMargin: number = 30;
+    public ChartBottomMargin: number = 40;
     public ChartLeftMargin: number = 60;
     public ChartRightMargin: number = 70;
 
@@ -87,6 +88,16 @@ export class YAxisSettings {
     public FontFamily: string = 'Calibri';
     public FontColor: string = '#808080';
     public FontSize: number = 10;
+}
+
+export class LegendSettings {
+    public LegendToggle: boolean = true;
+    public LegendPosition: string = 'bottom';
+    public LegendMargin: number = 10;
+
+    public FontColor: string = '#808080';
+    public FontFamily: string = 'Calibri';
+    public FontSize: number = 13;
 }
 
 export class TooltipSettings {

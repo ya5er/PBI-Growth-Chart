@@ -51,6 +51,8 @@ export class Visual implements IVisual {
         console.log('Visual update', options);
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
         let settings = this.settings;
+
+        // Only reset if save setting is off
         if (!settings.AnnotationSettings.SaveLocations) {
             this.annotations = [];
         }
@@ -198,6 +200,7 @@ export class Visual implements IVisual {
             .append("g")
                 .attr("transform",
                     "translate(" + margin.left + "," + margin.top + ")");
+
                                 
         // Set X axis values (date format)
         var x = d3.scaleTime()
@@ -229,10 +232,12 @@ export class Visual implements IVisual {
                 }
             })
             .call(g => {
-                g.selectAll('.x-axis-g path') // Select the y-axis line
+                g.selectAll('.x-axis-g path') // Select the x-axis line
                     .attr('stroke', settings.LayoutSettings.AxisColor); 
+
                 g.selectAll('.x-axis-g line') // Select tick mark lines
                     .attr('stroke', toggleXGridlines ? settings.LayoutSettings.GridlineColor : settings.LayoutSettings.AxisColor);
+                    
                 // font settings
                 g.selectAll('.x-axis-g text')
                     .style('fill', this.settings.XAxisSettings.FontColor)
@@ -280,6 +285,7 @@ export class Visual implements IVisual {
             .call(g => {
                 g.selectAll('.y-axis-g path') // Select the y-axis line
                     .attr('stroke', settings.LayoutSettings.AxisColor); 
+
                 g.selectAll('.y-axis-g line') // Select tick mark lines
                     .attr('stroke', toggleYGridlines ? settings.LayoutSettings.GridlineColor : settings.LayoutSettings.AxisColor);
             });
@@ -327,8 +333,7 @@ export class Visual implements IVisual {
                 )
 
 
-        // Add a circle element
-
+        // Create a circle element for mouse position
         const circle = svg.append("circle")
             .attr("r", 0)
             .attr("fill", this.settings.TooltipSettings.TooltipColour)
@@ -336,12 +341,33 @@ export class Visual implements IVisual {
             .attr("opacity", .70)
             .style("pointer-events", "none");
 
+        if (settings.LegendSettings.LegendToggle) {
+            const legend = svg.append("rect")
+                .attr("width", settings.LegendSettings.FontSize)
+                .attr("height", settings.LegendSettings.FontSize)
+                .attr("fill", this.settings.TooltipSettings.TooltipColour)
+                .style("stroke", "white")
+                .attr("opacity", .70)
+                .attr("x", width / 2 - settings.LegendSettings.FontSize - 5)
+                .attr("y", height + margin.bottom - settings.LegendSettings.LegendMargin - settings.LegendSettings.FontSize / 2);
+
+            svg.append('text')
+                .attr('fill', settings.LegendSettings.FontColor)
+                .attr('font-size', settings.LegendSettings.FontSize)
+                .attr('font-family', settings.PointLabels.FontFamily)
+                .attr('dominant-baseline', 'middle')
+                .attr('y', height + margin.bottom - settings.LegendSettings.LegendMargin)
+                .attr('x', width / 2)
+                .text(dataViews[0].table.columns[numberIndex].displayName);
+        }
+
         const listeningRect = svg.append("rect")
+            .classed("listeningRect", true)
             .attr("width", width)
             .attr("height", height);
         
         if (this.settings.TooltipSettings.ToggleTooltip) {
-            // create the mouse move function
+            // Create the mouse move function
             listeningRect.on("mousemove", function (event) {
                 const [xCoord] = d3.pointer(event, this);
                 const bisectDate = d3.bisector(function(d: chartRow) { return d.date }).left;
@@ -896,8 +922,6 @@ export class Visual implements IVisual {
         //     d3.select(this).attr("stroke", null);
         // }
 
-        //let annotations = []
-
         // Loop through rows to create annotations
         if (this.annotations.length == 0) {
             data.forEach((row, idx) => {
@@ -913,8 +937,6 @@ export class Visual implements IVisual {
                 }
             });
         } 
-
-        console.log(this.annotations);
 
         let annotations = this.annotations;
 
@@ -941,7 +963,6 @@ export class Visual implements IVisual {
                 .style('fill', settings.AnnotationSettings.FontColor)
                 .style('font-family', settings.AnnotationSettings.FontFamily)
                 .text(function(d: Annotation) { return d.text; });
-                //.call(drag);
             
             svg.selectAll('.annotationLine')
                 .data(annotations)
@@ -957,7 +978,7 @@ export class Visual implements IVisual {
                     update => update.attr("x1", function(d: Annotation) { return x(d.date); })
                         .attr("y1", function(d: Annotation) { return y(d.value); })
                         .attr("x2", function(d: Annotation) { 
-                            return d.x + d.text.length * (fontsize / 4.5) + xOffset; 
+                            return d.x + getTextWidth(d.text, settings.AnnotationSettings) / 2 + xOffset; 
                         })
                         .attr("y2", function(d: Annotation) { 
                             return (d.y > (y(d.value) - yOffset) ? d.y - fontsize + yOffset : d.y + yOffset + fontsize / 2);
@@ -987,7 +1008,6 @@ export class Visual implements IVisual {
         if (settings.AnnotationSettings.ToggleAnnotations && commentIndex >= 0){
             let yOffset = -settings.AnnotationSettings.YOffset;
             let xOffset = settings.AnnotationSettings.XOffset;
-            // update();
 
             svg.selectAll('.annotationText')
                 .data(this.annotations)
@@ -1011,7 +1031,7 @@ export class Visual implements IVisual {
                     .attr("x1", function(d: Annotation) { return x(d.date); })
                     .attr("y1", function(d: Annotation) { return y(d.value); })
                     .attr("x2", function(d: Annotation) { 
-                        return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5) + xOffset; 
+                        return d.x + getTextWidth(d.text, settings.AnnotationSettings) / 2 + xOffset; 
                     })
                     .attr("y2", function(d: Annotation) { 
                         return (d.y > (y(d.value) - yOffset) ? d.y - settings.AnnotationSettings.FontSize + yOffset : d.y + yOffset + settings.AnnotationSettings.FontSize / 2);
@@ -1021,7 +1041,7 @@ export class Visual implements IVisual {
                 update => update.attr("x1", function(d: Annotation) { return x(d.date); })
                     .attr("y1", function(d: Annotation) { return y(d.value); })
                     .attr("x2", function(d: Annotation) { 
-                        return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5); 
+                        return d.x + getTextWidth(d.text, settings.AnnotationSettings) / 2; 
                     })
                     .attr("y2", function(d: Annotation) { 
                         return (d.y > (y(d.value) - yOffset) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
@@ -1034,6 +1054,7 @@ export class Visual implements IVisual {
                     .attr('stroke-dasharray', '5,4');
             }
 
+            // Create arrows (if selected)
             if (settings.AnnotationSettings.ShowArrow){
                 svg.selectAll('.annotationArrow')
                     .data(this.annotations)

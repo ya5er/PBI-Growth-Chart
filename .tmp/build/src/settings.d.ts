@@ -4,6 +4,7 @@ export declare class VisualSettings extends DataViewObjectsParser {
     LayoutSettings: LayoutSettings;
     XAxisSettings: XAxisSettings;
     YAxisSettings: YAxisSettings;
+    LegendSettings: LegendSettings;
     TooltipSettings: TooltipSettings;
     PointLabels: PointLabels;
     GrowthIndicator: GrowthIndicator;
@@ -43,6 +44,14 @@ export declare class YAxisSettings {
     TickCount: number;
     FontFamily: string;
     FontColor: string;
+    FontSize: number;
+}
+export declare class LegendSettings {
+    LegendToggle: boolean;
+    LegendPosition: string;
+    LegendMargin: number;
+    FontColor: string;
+    FontFamily: string;
     FontSize: number;
 }
 export declare class TooltipSettings {

@@ -9,7 +9,7 @@ var annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG;
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Jx: () => (/* binding */ VisualSettings)
 /* harmony export */ });
-/* unused harmony exports LayoutSettings, LineSettings, XAxisSettings, YAxisSettings, TooltipSettings, PointLabels, GrowthIndicator, PrimaryLabelSettings, SecondaryGrowthIndicator, SecondaryLabelSettings, AnnotationSettings */
+/* unused harmony exports LayoutSettings, LineSettings, XAxisSettings, YAxisSettings, LegendSettings, TooltipSettings, PointLabels, GrowthIndicator, PrimaryLabelSettings, SecondaryGrowthIndicator, SecondaryLabelSettings, AnnotationSettings */
 /* harmony import */ var powerbi_visuals_utils_dataviewutils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(24554);
 /*
  *  Power BI Visualizations
@@ -45,6 +45,7 @@ class VisualSettings extends DataViewObjectsParser {
         this.LayoutSettings = new LayoutSettings();
         this.XAxisSettings = new XAxisSettings();
         this.YAxisSettings = new YAxisSettings();
+        this.LegendSettings = new LegendSettings();
         this.TooltipSettings = new TooltipSettings();
         this.PointLabels = new PointLabels();
         this.GrowthIndicator = new GrowthIndicator();
@@ -58,7 +59,7 @@ class VisualSettings extends DataViewObjectsParser {
 class LayoutSettings {
     constructor() {
         this.ChartTopMargin = 10;
-        this.ChartBottomMargin = 30;
+        this.ChartBottomMargin = 40;
         this.ChartLeftMargin = 60;
         this.ChartRightMargin = 70;
         this.AxisColor = '#FFFFFF';
@@ -93,6 +94,16 @@ class YAxisSettings {
         this.FontFamily = 'Calibri';
         this.FontColor = '#808080';
         this.FontSize = 10;
+    }
+}
+class LegendSettings {
+    constructor() {
+        this.LegendToggle = true;
+        this.LegendPosition = 'bottom';
+        this.LegendMargin = 10;
+        this.FontColor = '#808080';
+        this.FontFamily = 'Calibri';
+        this.FontSize = 13;
     }
 }
 class TooltipSettings {
@@ -234,6 +245,7 @@ class Visual {
         console.log('Visual update', options);
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
         let settings = this.settings;
+        // Only reset if save setting is off
         if (!settings.AnnotationSettings.SaveLocations) {
             this.annotations = [];
         }
@@ -379,7 +391,7 @@ class Visual {
             }
         })
             .call(g => {
-            g.selectAll('.x-axis-g path') // Select the y-axis line
+            g.selectAll('.x-axis-g path') // Select the x-axis line
                 .attr('stroke', settings.LayoutSettings.AxisColor);
             g.selectAll('.x-axis-g line') // Select tick mark lines
                 .attr('stroke', toggleXGridlines ? settings.LayoutSettings.GridlineColor : settings.LayoutSettings.AxisColor);
@@ -467,18 +479,37 @@ class Visual {
             .attr('d', d3__WEBPACK_IMPORTED_MODULE_2__/* .line */ .jvg()
             .x(function (d) { return x(d.date); })
             .y(function (d) { return y(d.value); }));
-        // Add a circle element
+        // Create a circle element for mouse position
         const circle = svg.append("circle")
             .attr("r", 0)
             .attr("fill", this.settings.TooltipSettings.TooltipColour)
             .style("stroke", "white")
             .attr("opacity", .70)
             .style("pointer-events", "none");
+        if (settings.LegendSettings.LegendToggle) {
+            const legend = svg.append("rect")
+                .attr("width", settings.LegendSettings.FontSize)
+                .attr("height", settings.LegendSettings.FontSize)
+                .attr("fill", this.settings.TooltipSettings.TooltipColour)
+                .style("stroke", "white")
+                .attr("opacity", .70)
+                .attr("x", width / 2 - settings.LegendSettings.FontSize - 5)
+                .attr("y", height + margin.bottom - settings.LegendSettings.LegendMargin - settings.LegendSettings.FontSize / 2);
+            svg.append('text')
+                .attr('fill', settings.LegendSettings.FontColor)
+                .attr('font-size', settings.LegendSettings.FontSize)
+                .attr('font-family', settings.PointLabels.FontFamily)
+                .attr('dominant-baseline', 'middle')
+                .attr('y', height + margin.bottom - settings.LegendSettings.LegendMargin)
+                .attr('x', width / 2)
+                .text(dataViews[0].table.columns[numberIndex].displayName);
+        }
         const listeningRect = svg.append("rect")
+            .classed("listeningRect", true)
             .attr("width", width)
             .attr("height", height);
         if (this.settings.TooltipSettings.ToggleTooltip) {
-            // create the mouse move function
+            // Create the mouse move function
             listeningRect.on("mousemove", function (event) {
                 const [xCoord] = d3__WEBPACK_IMPORTED_MODULE_2__/* .pointer */ .cx$(event, this);
                 const bisectDate = d3__WEBPACK_IMPORTED_MODULE_2__/* .bisector */ .YFb(function (d) { return d.date; }).left;
@@ -964,7 +995,6 @@ class Visual {
         // function dragended(event, d) {
         //     d3.select(this).attr("stroke", null);
         // }
-        //let annotations = []
         // Loop through rows to create annotations
         if (this.annotations.length == 0) {
             data.forEach((row, idx) => {
@@ -980,7 +1010,6 @@ class Visual {
                 }
             });
         }
-        console.log(this.annotations);
         let annotations = this.annotations;
         function calculateRotationAngle(graphX, graphY, annotationX, annotationY) {
             const deltaX = graphX - annotationX;
@@ -1003,7 +1032,6 @@ class Visual {
                 .style('fill', settings.AnnotationSettings.FontColor)
                 .style('font-family', settings.AnnotationSettings.FontFamily)
                 .text(function (d) { return d.text; });
-            //.call(drag);
             svg.selectAll('.annotationLine')
                 .data(annotations)
                 .join(enter => enter.append('line')
@@ -1016,7 +1044,7 @@ class Visual {
                 .attr('stroke-width', settings.AnnotationSettings.LineThickness), update => update.attr("x1", function (d) { return x(d.date); })
                 .attr("y1", function (d) { return y(d.value); })
                 .attr("x2", function (d) {
-                return d.x + d.text.length * (fontsize / 4.5) + xOffset;
+                return d.x + getTextWidth(d.text, settings.AnnotationSettings) / 2 + xOffset;
             })
                 .attr("y2", function (d) {
                 return (d.y > (y(d.value) - yOffset) ? d.y - fontsize + yOffset : d.y + yOffset + fontsize / 2);
@@ -1039,7 +1067,6 @@ class Visual {
         if (settings.AnnotationSettings.ToggleAnnotations && commentIndex >= 0) {
             let yOffset = -settings.AnnotationSettings.YOffset;
             let xOffset = settings.AnnotationSettings.XOffset;
-            // update();
             svg.selectAll('.annotationText')
                 .data(this.annotations)
                 .join('text')
@@ -1059,7 +1086,7 @@ class Visual {
                 .attr("x1", function (d) { return x(d.date); })
                 .attr("y1", function (d) { return y(d.value); })
                 .attr("x2", function (d) {
-                return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5) + xOffset;
+                return d.x + getTextWidth(d.text, settings.AnnotationSettings) / 2 + xOffset;
             })
                 .attr("y2", function (d) {
                 return (d.y > (y(d.value) - yOffset) ? d.y - settings.AnnotationSettings.FontSize + yOffset : d.y + yOffset + settings.AnnotationSettings.FontSize / 2);
@@ -1068,7 +1095,7 @@ class Visual {
                 .attr('stroke-width', settings.AnnotationSettings.LineThickness), update => update.attr("x1", function (d) { return x(d.date); })
                 .attr("y1", function (d) { return y(d.value); })
                 .attr("x2", function (d) {
-                return d.x + d.text.length * (settings.AnnotationSettings.FontSize / 4.5);
+                return d.x + getTextWidth(d.text, settings.AnnotationSettings) / 2;
             })
                 .attr("y2", function (d) {
                 return (d.y > (y(d.value) - yOffset) ? d.y - settings.AnnotationSettings.FontSize : d.y + settings.AnnotationSettings.FontSize / 2);
@@ -1078,6 +1105,7 @@ class Visual {
                 svg.selectAll('.annotationLine')
                     .attr('stroke-dasharray', '5,4');
             }
+            // Create arrows (if selected)
             if (settings.AnnotationSettings.ShowArrow) {
                 svg.selectAll('.annotationArrow')
                     .data(this.annotations)
