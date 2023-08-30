@@ -5,8 +5,8 @@ import VisualConstructorOptions = powerbiVisualsApi.extensibility.visual.VisualC
 import DialogConstructorOptions = powerbiVisualsApi.extensibility.visual.DialogConstructorOptions;
 var powerbiKey: any = "powerbi";
 var powerbi: any = window[powerbiKey];
-var annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG: IVisualPlugin = {
-    name: 'annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG',
+var annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019: IVisualPlugin = {
+    name: 'annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019',
     displayName: 'annotatedLineGraph',
     class: 'Visual',
     apiVersion: '5.1.0',
@@ -27,6 +27,6 @@ var annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG: IVisualPlugin = {
 if (typeof powerbi !== "undefined") {
     powerbi.visuals = powerbi.visuals || {};
     powerbi.visuals.plugins = powerbi.visuals.plugins || {};
-    powerbi.visuals.plugins["annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG"] = annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG;
+    powerbi.visuals.plugins["annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019"] = annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019;
 }
-export default annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019_DEBUG;
+export default annotatedLineGraphF60967A1C89C4EAC9B003DF82B16E019;

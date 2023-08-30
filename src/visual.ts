@@ -342,16 +342,18 @@ export class Visual implements IVisual {
             .style("pointer-events", "none");
 
         if (settings.LegendSettings.LegendToggle) {
-            const legend = svg.append("rect")
+            console.log(margin.bottom);
+
+            let legend = svg.append("rect")
                 .attr("width", settings.LegendSettings.FontSize)
                 .attr("height", settings.LegendSettings.FontSize)
-                .attr("fill", this.settings.TooltipSettings.TooltipColour)
+                .attr("fill", this.settings.LineSettings.LineColor)
                 .style("stroke", "white")
                 .attr("opacity", .70)
                 .attr("x", width / 2 - settings.LegendSettings.FontSize - 5)
                 .attr("y", height + margin.bottom - settings.LegendSettings.LegendMargin - settings.LegendSettings.FontSize / 2);
 
-            svg.append('text')
+            let legendText = svg.append('text')
                 .attr('fill', settings.LegendSettings.FontColor)
                 .attr('font-size', settings.LegendSettings.FontSize)
                 .attr('font-family', settings.PointLabels.FontFamily)
@@ -421,19 +423,10 @@ export class Visual implements IVisual {
 
             let isMax = settings.PointLabels.Value == 'max';
 
-            // const sortedDataPoints = groupedDataYearly.get(2022).slice().sort((a, b) => b.value - a.value);
-            // console.log(sortedDataPoints);
             // Take the nth point from this sorted list after doing it for each year/month.
-
             groupedData.forEach((dataPoints) => {
                 let currentVal;
                 let n = settings.PointLabels.nValue;
-
-                // for (const dataPoint of dataPoints) {
-                //     if (isMax? dataPoint.value >= currentVal.value : dataPoint.value <= currentVal.value) {
-                //         currentVal = dataPoint;
-                //     }
-                // }
 
                 // Sort data to get nth value
                 const sortedData = dataPoints.slice().sort((a, b) => b.value - a.value);
@@ -571,12 +564,14 @@ export class Visual implements IVisual {
 
             let growthPercent = (growthPoint2.value - growthPoint1.value) / growthPoint1.value * 100;
             growthPercent = Math.round(growthPercent * 10) / 10;
+
             let growthPercentStr;
             if (!settings.PrimaryLabelSettings.ShowSign) {
                 growthPercentStr = Math.abs(growthPercent);
             } else {
                 growthPercentStr = growthPercent > 0 ? '+' + growthPercent : growthPercent;
             }
+
             let increasing = growthPercent > 0 ? true : false;
             let minY = (y(growthPoint1.value) >= y(growthPoint2.value)) ? y(growthPoint2.value) : y(growthPoint1.value);
             let maxY = (y(growthPoint1.value) >= y(growthPoint2.value)) ? y(growthPoint1.value) : y(growthPoint2.value);
