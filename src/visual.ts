@@ -210,7 +210,7 @@ export class Visual implements IVisual {
         // Add X axis
         let toggleXGridlines = (settings.LayoutSettings.ToggleGridLines == "both" || settings.LayoutSettings.ToggleGridLines == "vertical");
         svg.append('g')
-            .classed('x-axis-g', true)  
+            .classed('x-axis-g', true)
             .attr('transform', 'translate(0,' + height + ')')
             .call(d3.axisBottom(x)
                 .tickFormat(function(date : Date){
@@ -344,22 +344,37 @@ export class Visual implements IVisual {
         if (settings.LegendSettings.LegendToggle) {
             console.log(margin.bottom);
 
+            // Get legend coordinates based on location selection
+            let legendX;
+            let legendY;
+            switch (settings.LegendSettings.LegendPosition) {
+                case "bottom":
+                    legendY = height + margin.bottom - settings.LegendSettings.LegendMargin;
+                    legendX = width / 2;
+                    break;
+                case "top":
+                    legendY = -settings.LegendSettings.LegendMargin;
+                    legendX = 0;
+                    break;
+            }
+
+            // Draw legend shape
             let legend = svg.append("rect")
                 .attr("width", settings.LegendSettings.FontSize)
                 .attr("height", settings.LegendSettings.FontSize)
                 .attr("fill", this.settings.LineSettings.LineColor)
                 .style("stroke", "white")
-                .attr("opacity", .70)
-                .attr("x", width / 2 - settings.LegendSettings.FontSize - 5)
-                .attr("y", height + margin.bottom - settings.LegendSettings.LegendMargin - settings.LegendSettings.FontSize / 2);
+                .attr("x", legendX - settings.LegendSettings.FontSize - 5)
+                .attr("y", legendY - settings.LegendSettings.FontSize / 2);
 
+            // Create legend text
             let legendText = svg.append('text')
                 .attr('fill', settings.LegendSettings.FontColor)
                 .attr('font-size', settings.LegendSettings.FontSize)
                 .attr('font-family', settings.PointLabels.FontFamily)
                 .attr('dominant-baseline', 'middle')
-                .attr('y', height + margin.bottom - settings.LegendSettings.LegendMargin)
-                .attr('x', width / 2)
+                .attr('y', legendY)
+                .attr('x', legendX)
                 .text(dataViews[0].table.columns[numberIndex].displayName);
         }
 
@@ -514,7 +529,6 @@ export class Visual implements IVisual {
                 } else {
                     defaultPoint2 = sortedData2[sortedData2.length - n];
                 }
-
             } else {
                 defaultPoint1 = data[data.length - 2];
                 defaultPoint2 = data[data.length - 1];
@@ -523,12 +537,6 @@ export class Visual implements IVisual {
             // Check if selectors are valid and find their index
             let growthPoint1 = (selector1 && (getIndex(selector1, data) != -1)) ? data[getIndex(selector1, data)] : defaultPoint1;
             let growthPoint2 = (selector2 && (getIndex(selector2, data) != -1)) ? data[getIndex(selector2, data)] : defaultPoint2;
-            
-            // let growthPoint1 = data[s1Index];
-            // let growthPoint2 = data[s2Index];
-
-            console.log(growthPoint1);
-            console.log(growthPoint2);
 
             // Draw circles on points selected
             let growthCircle1 = svg.append("circle")

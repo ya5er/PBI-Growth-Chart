@@ -306,10 +306,6 @@
                             {
                                 "value": "bottom",
                                 "displayName": "Bottom center"
-                            },
-                            {
-                                "value": "left",
-                                "displayName": "Left"
                             }
                         ]
                     }
