@@ -1,5 +1,5 @@
 # annotatedLineGraph
- Custom Power BI visual created using D3.js
+ Custom Power BI visual created using TypeScript and D3.js
 
  Follow [this](https://learn.microsoft.com/en-us/power-bi/developer/visuals/environment-setup) tutorial to set up the PBI development environment.
  
