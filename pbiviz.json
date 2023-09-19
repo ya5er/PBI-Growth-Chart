@@ -12,10 +12,10 @@
     "apiVersion": "5.1.0",
     "author": {
         "name": "Yaser Nossibeh",
-        "email": "yaser.nossibeh@rci.rogers.com"
+        "email": "yayonoss@gmail.com"
     },
     "assets": {
-        "icon": "assets/rogers.png"
+        "icon": "assets/icon.png"
     },
     "style": "style/visual.less",
     "capabilities": "capabilities.json",
